@@ -114,7 +114,8 @@ import { normalizeCapability } from "@/executors";
 import { isSynchronousMediaCapability } from "@core/synchronous-media";
 import {
 	decisionIrForRoute, decisionQuestionLimit, filterCandidatesByModalities, filterEmbeddingCandidatesByModalities, filterDecisionCandidatesByModalities,
-	requiredTypedDecisionFeatures, routeDecisionCandidates, routeServesTypedDecisionFeatures, routeUploadedFileIds,
+	requiredTypedDecisionFeatures, routeDecisionCandidates, routeGivesChoiceProbabilities, routeServesTypedDecisionFeatures,
+	routeUploadedFileIds,
 } from "./modalities";
 import { loadPriceCard } from "../pricing";
 import { stripUsagePricing } from "../usage";
@@ -654,6 +655,13 @@ export async function doRequestWithIR(
 				return Response.json({ error: "unsupported_parameter", model: ctx.model, endpoint: ctx.endpoint,
 					request_id: ctx.requestId,
 					message: `No route for this model answers ${typedFeatures.join(", ")} questions. Use a model that lists them, such as liquid-ai/d1.2 or liquid-ai/d1.2-ultra.`,
+				}, { status: 400 });
+			}
+			if (Object.values(decisions.questions ?? {}).some(question => question.type === "ranking") &&
+				!decisionRoutes.some(routeGivesChoiceProbabilities)) {
+				return Response.json({ error: "unsupported_parameter", model: ctx.model, endpoint: ctx.endpoint,
+					request_id: ctx.requestId,
+					message: "No route for this model returns choice probabilities, which ranking questions need. Use a model that answers choice questions with probabilities, such as liquid-ai/d1.2.",
 				}, { status: 400 });
 			}
 			if (Object.values(decisions.questions ?? {}).some(question => question.type === "box") ||

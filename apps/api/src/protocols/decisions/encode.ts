@@ -1,12 +1,24 @@
 import type { IRDecisionsRequest, IRDecisionsResponse } from "@core/ir";
-import { NativeDecisionAnswerSchema } from "@core/decisions";
+import { NativeDecisionAnswerSchema, isRankingQuestion, rankingAnswerFromChoice } from "@core/decisions";
 import { decisionQuestionId } from "./decode";
+
+/** Ranking questions were asked as choice questions; give their answers back as rankings. */
+function rankLegacyAnswers(answers: IRDecisionsResponse["answers"], request?: IRDecisionsRequest): IRDecisionsResponse["answers"] {
+	const questions = request?.questions;
+	if (!questions || !Object.values(questions).some(isRankingQuestion)) return answers;
+	return Object.fromEntries(Object.entries(answers).map(([id, answer]) => {
+		const question = questions[id];
+		return [id, question && isRankingQuestion(question) ? rankingAnswerFromChoice(answer, question) : answer];
+	}));
+}
 
 export function encodeDecisionsResponse(ir: IRDecisionsResponse, request?: IRDecisionsRequest): any {
 	const usage = ir.usage ? {
 		input_tokens: ir.usage.inputTokens, output_tokens: ir.usage.outputTokens, total_tokens: ir.usage.totalTokens,
 	} : undefined;
-	if (!request?.decisionContext) return { model: ir.model, answers: ir.answers, ...(usage ? { usage } : {}) };
+	if (!request?.decisionContext) {
+		return { model: ir.model, answers: rankLegacyAnswers(ir.answers, request), ...(usage ? { usage } : {}) };
+	}
 
 	const answers = ir.nativeAnswers ?? request.decisionContext.questions.map((question, index) => {
 		const answer = ir.answers[decisionQuestionId(index)];

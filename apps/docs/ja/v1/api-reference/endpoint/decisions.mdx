@@ -175,6 +175,38 @@ print(decision["answers"])
 回答には `questions` と同じキーが使われます。`choice` の回答には選ばれた選択肢、確率、信頼度が、`noul` の回答には 0〜1 の確率が、`score` の回答には確率で重み付けしたスコア、凡例、確率、信頼度が含まれます。
 
 <span id="choose-a-model"></span>
+### 選択肢を順位付けする
+
+`ranking` の質問は、`criteria` の選択肢を良い順に並べます。`criteria`（2 つ以上の選択肢）と、上位 `top_k` 件だけを返す任意の `top_k` を指定します。Phaseo はどの選択肢が最良かをモデルに尋ね、その確率の順に選択肢を並べるため、各選択肢の確率を返すルートを持つモデルで使えます。Together Tev と Respan Span-01 は確率を返さないため、ranking の質問には `error: "unsupported_parameter"` とともに `400` を返します。回答には、選択肢のキーを順に並べた `ranking` と、各選択肢が最良である確率を示す `probabilities` が含まれます。確率が同じ選択肢は `criteria` の順序を保ちます。ただし `"10"` のような整数のキーは、通常の JSON オブジェクトと同じく数値順になります。ranking の質問は choice の質問と同じように課金されます。ranking は従来の state 形式でのみ使えます。
+
+```json
+{
+  "model": "liquid-ai/d1.2-ultra",
+  "state": "Customer on the free plan, wrote in twice this week about a failed export, prefers not to be called.",
+  "questions": {
+    "follow_up": {
+      "type": "ranking",
+      "instructions": "Best way to follow up, best first",
+      "criteria": { "email": "Email", "phone": "Phone call", "chat": "Live chat", "none": "No follow-up" },
+      "top_k": 2
+    }
+  }
+}
+```
+
+```json
+{
+  "model": "liquid-ai/d1.2-ultra",
+  "answers": {
+    "follow_up": {
+      "type": "ranking",
+      "ranking": ["email", "chat"],
+      "probabilities": { "email": 0.71, "phone": 0.04, "chat": 0.22, "none": 0.03 }
+    }
+  }
+}
+```
+
 ## モデルを選ぶ
 
 これらのモデルを呼び出す前に、モデルの提供状況を確認してください。

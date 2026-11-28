@@ -175,6 +175,38 @@ Boolean विकल्प मान boolean के रूप में ही �
 उत्तर `questions` वाली ही कुंजियां इस्तेमाल करते हैं। `choice` उत्तरों में चुना गया विकल्प, संभावनाएं और confidence होते हैं; `noul` उत्तरों में 0–1 की संभावना होती है; `score` उत्तरों में संभावना-भारित स्कोर, एक legend, संभावनाएं और confidence होते हैं।
 
 <span id="choose-a-model"></span>
+### विकल्पों को क्रम में लगाएँ
+
+`ranking` प्रश्न अपने `criteria` विकल्पों को सबसे अच्छे से शुरू करके क्रम में लगाता है। इसमें `criteria` (कम से कम दो विकल्प) और वैकल्पिक `top_k` होता है, जो केवल सबसे अच्छे `top_k` लौटाता है। Phaseo मॉडल से पूछता है कि कौन-सा विकल्प सबसे अच्छा है और विकल्पों को उनकी संभावनाओं के अनुसार क्रम में लगाता है, इसलिए यह उन मॉडलों पर काम करता है जिनके रूट हर choice विकल्प के लिए संभावना लौटाते हैं। Together Tev और Respan Span-01 ऐसा नहीं करते, इसलिए उनके लिए ranking प्रश्न `error: "unsupported_parameter"` के साथ `400` लौटाता है। उत्तर में `ranking` (क्रम में विकल्पों की कुंजियाँ) और `probabilities` (हर विकल्प के सबसे अच्छा होने की संभावना) होते हैं। समान संभावना वाले विकल्प `criteria` में अपना क्रम बनाए रखते हैं, सिवाय पूर्ण संख्या वाली कुंजियों (जैसे `"10"`) के, जो किसी भी JSON ऑब्जेक्ट की तरह संख्या के क्रम में लगती हैं। ranking प्रश्न का बिल choice प्रश्न की तरह बनता है। ranking केवल पुराने state फ़ॉर्मैट में काम करता है।
+
+```json
+{
+  "model": "liquid-ai/d1.2-ultra",
+  "state": "Customer on the free plan, wrote in twice this week about a failed export, prefers not to be called.",
+  "questions": {
+    "follow_up": {
+      "type": "ranking",
+      "instructions": "Best way to follow up, best first",
+      "criteria": { "email": "Email", "phone": "Phone call", "chat": "Live chat", "none": "No follow-up" },
+      "top_k": 2
+    }
+  }
+}
+```
+
+```json
+{
+  "model": "liquid-ai/d1.2-ultra",
+  "answers": {
+    "follow_up": {
+      "type": "ranking",
+      "ranking": ["email", "chat"],
+      "probabilities": { "email": 0.71, "phone": 0.04, "chat": 0.22, "none": 0.03 }
+    }
+  }
+}
+```
+
 ## मॉडल चुनें
 
 इनमें से किसी भी मॉडल को कॉल करने से पहले मॉडल की उपलब्धता जांचें।

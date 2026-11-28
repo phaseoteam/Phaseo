@@ -12,7 +12,8 @@ import type {
 	IRMessage,
 } from "@core/ir";
 import {
-	DECISION_QUESTION_CEILING, DEFAULT_ROUTE_QUESTION_LIMIT, decisionQuestionFeature, isInlineAudioUrl, type TypedDecisionFeature,
+	DECISION_QUESTION_CEILING, DEFAULT_ROUTE_QUESTION_LIMIT, decisionQuestionFeature, isInlineAudioUrl, isRankingQuestion,
+	rankingQuestionAsChoice, type TypedDecisionFeature,
 } from "@core/decisions";
 import type { ProviderCandidate } from "../before/types";
 
@@ -59,6 +60,22 @@ export function routeServesTypedDecisionFeatures(
 	return Array.isArray(declared) && features.every(feature => declared.includes(feature));
 }
 
+/**
+ * Providers whose decision routes never return a probability per choice option: Together
+ * Tev answers with a label only, and Respan Span-01 answers noul questions only. Kept in
+ * code so ranking requests stay off them even where the catalogue lacks the flag below.
+ */
+const NO_CHOICE_PROBABILITY_PROVIDERS = new Set(["together", "respan"]);
+
+/**
+ * Whether a route answers choice questions with a probability per option. A capability
+ * can also declare params.choice_probabilities false.
+ */
+export function routeGivesChoiceProbabilities(candidate: Pick<ProviderCandidate, "providerId" | "capabilityParams">): boolean {
+	return !NO_CHOICE_PROBABILITY_PROVIDERS.has(candidate.providerId) &&
+		candidate.capabilityParams?.choice_probabilities !== false;
+}
+
 export function filterDecisionCandidatesByModalities(
 	candidates: ProviderCandidate[],
 	ir: IRDecisionsRequest,
@@ -73,6 +90,8 @@ export function filterDecisionCandidatesByModalities(
 	// Routes that take only inline clips declare params.audio_urls false.
 	const requestsAudioUrls = (ir.audio ?? []).some(clip => clip.source === "url" && !isInlineAudioUrl(clip));
 	const typedFeatures = requiredTypedDecisionFeatures(ir);
+	// A ranking is built from choice probabilities, so label-only routes can't answer it.
+	const requestsRanking = Object.values(ir.questions ?? {}).some(isRankingQuestion);
 	const media = [
 		{ modality: "image", parameter: "images", requested: Boolean(ir.images?.length) },
 		{ modality: "audio", parameter: "audio", requested: Boolean(ir.audio?.length) },
@@ -86,6 +105,7 @@ export function filterDecisionCandidatesByModalities(
 		(!requestsImageUrls || candidate.capabilityParams?.image_urls === true) &&
 		(!requestsAudioUrls || candidate.capabilityParams?.audio_urls !== false) &&
 		routeServesTypedDecisionFeatures(candidate, typedFeatures) &&
+		(!requestsRanking || routeGivesChoiceProbabilities(candidate)) &&
 		media.every(item => candidate.inputModalities?.includes(item.modality) && candidate.capabilityParams?.[item.parameter] === true));
 	// Prefer routes that answer multi-select; others still get the question as before.
 	if (requestsMultiChoice(ir)) {
@@ -96,17 +116,22 @@ export function filterDecisionCandidatesByModalities(
 }
 
 /**
- * The decisions request as one route receives it. A choice question's `multiple` is
- * dropped on routes that don't answer multi-select, so they get a plain choice question.
+ * The decisions request as one route receives it. A ranking question is asked as a
+ * choice question (the answer is ranked afterwards; see rankingAnswerFromChoice), and a
+ * choice question's `multiple` is dropped on routes that don't answer multi-select, so
+ * they get a plain choice question.
  */
 export function decisionIrForRoute(
 	ir: IRDecisionsRequest,
 	candidate: Pick<ProviderCandidate, "capabilityParams">,
 ): IRDecisionsRequest {
-	if (!Object.values(ir.questions ?? {}).some(question => "multiple" in question) ||
-		routeServesTypedDecisionFeatures(candidate, ["multi_choice"])) return ir;
+	const questionList = Object.values(ir.questions ?? {});
+	const stripMultiple = questionList.some(question => "multiple" in question) &&
+		!routeServesTypedDecisionFeatures(candidate, ["multi_choice"]);
+	if (!stripMultiple && !questionList.some(isRankingQuestion)) return ir;
 	const questions = Object.fromEntries(Object.entries(ir.questions).map(([id, question]) => {
-		if (!("multiple" in question)) return [id, question];
+		if (isRankingQuestion(question)) return [id, rankingQuestionAsChoice(question)];
+		if (!stripMultiple || !("multiple" in question)) return [id, question];
 		const { multiple: _multiple, ...rest } = question;
 		return [id, rest as IRDecisionsRequest["questions"][string]];
 	}));

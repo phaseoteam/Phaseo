@@ -49,6 +49,51 @@ export function decisionQuestionFeature(question: { type: string; multiple?: unk
 	return (TYPED_DECISION_FEATURES as readonly string[]).includes(question.type) ? question.type as TypedDecisionFeature : null;
 }
 
+/**
+ * A ranking question orders its options, best first, and with `top_k` keeps only the
+ * first k. Any route that returns choice probabilities answers it: the route is asked the
+ * same question as a choice, and the options are ordered by the probability that each is
+ * the best one.
+ */
+export type DecisionRankingQuestion = {
+	type: "ranking";
+	instructions: string | Record<string, unknown> | unknown[];
+	criteria: Record<string, string | null>;
+	// null (sent by generated SDKs for an unset field) means every option, like undefined.
+	top_k?: number | null;
+};
+
+export function isRankingQuestion(question: { type: string }): question is DecisionRankingQuestion & { type: "ranking" } {
+	return question.type === "ranking";
+}
+
+/** The choice question a route is asked in place of a ranking question. */
+export function rankingQuestionAsChoice(question: DecisionRankingQuestion): { type: "choice"; instructions: DecisionRankingQuestion["instructions"]; criteria: Record<string, string | null> } {
+	return { type: "choice", instructions: question.instructions, criteria: question.criteria };
+}
+
+/**
+ * A ranking answer built from the route's choice answer: every option ordered by its
+ * probability (ties keep the caller's option order), cut to `top_k` when given.
+ * A refusal, or anything that is not a choice answer, is returned unchanged.
+ */
+export function rankingAnswerFromChoice(answer: unknown, question: DecisionRankingQuestion): unknown {
+	if (answer === null || typeof answer !== "object" || Array.isArray(answer)) return answer;
+	const choice = answer as Record<string, unknown>;
+	if (choice.type !== "choice" || choice.probabilities === null || typeof choice.probabilities !== "object") return answer;
+	const probabilities = choice.probabilities as Record<string, number>;
+	const options = Object.keys(question.criteria);
+	const ranking = options
+		.map((option, index) => ({ option, index, probability: probabilities[option] ?? 0 }))
+		.sort((a, b) => b.probability - a.probability || a.index - b.index)
+		.map(entry => entry.option);
+	return {
+		type: "ranking",
+		ranking: typeof question.top_k === "number" ? ranking.slice(0, question.top_k) : ranking,
+		probabilities: Object.fromEntries(options.map(option => [option, probabilities[option] ?? 0])),
+	};
+}
+
 /** A clip given as a `data:` URL (native `input_audio.url`) is inline, not remote. */
 export function isInlineAudioUrl(clip: { source: string; data: string }): boolean {
 	return clip.source === "url" && /^data:audio\//i.test(clip.data);

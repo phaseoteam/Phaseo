@@ -166,6 +166,19 @@ export interface LegacyDecisionsRequest {
             | unknown[];
           max?: number;
           type: "boxes";
+        }
+      | {
+          criteria: {
+            [key: string]: string | null;
+          };
+          instructions:
+            | string
+            | {
+                [key: string]: unknown;
+              }
+            | unknown[];
+          top_k?: number;
+          type: "ranking";
         };
   };
   routing?: {

@@ -14907,6 +14907,7 @@ components:
               - $ref: '#/components/schemas/DecisionDateQuestion'
               - $ref: '#/components/schemas/DecisionSpansQuestion'
               - $ref: '#/components/schemas/DecisionBoxesQuestion'
+              - $ref: '#/components/schemas/DecisionRankingQuestion'
         provider_options:
           $ref: '#/components/schemas/DecisionProviderOptions'
         images:
@@ -15063,6 +15064,31 @@ components:
           minimum: 1
           maximum: 16
           description: Nombre maximal d’occurrences renvoyées, de 1 à 16.
+    DecisionRankingQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+        - criteria
+      additionalProperties: false
+      description: Classe les options de la meilleure à la moins bonne, ou ne renvoie que les top_k meilleures. Les modèles dont les routes renvoient une probabilité pour chaque option de choix y répondent ; les autres renvoient 400. La réponse liste les clés des options classées et la probabilité que chaque option soit la meilleure.
+      properties:
+        type:
+          type: string
+          enum:
+            - ranking
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+        criteria:
+          type: object
+          minProperties: 2
+          additionalProperties:
+            type: string
+            nullable: true
+        top_k:
+          type: integer
+          minimum: 1
+          description: Ne renvoie que les top_k meilleures options. Au plus le nombre de critères.
     DecisionImage:
       type: object
       required:

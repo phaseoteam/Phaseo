@@ -14907,6 +14907,7 @@ components:
               - $ref: '#/components/schemas/DecisionDateQuestion'
               - $ref: '#/components/schemas/DecisionSpansQuestion'
               - $ref: '#/components/schemas/DecisionBoxesQuestion'
+              - $ref: '#/components/schemas/DecisionRankingQuestion'
         provider_options:
           $ref: '#/components/schemas/DecisionProviderOptions'
         images:
@@ -15063,6 +15064,31 @@ components:
           minimum: 1
           maximum: 16
           description: أقصى عدد من النسخ المُعادة، من 1 إلى 16.
+    DecisionRankingQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+        - criteria
+      additionalProperties: false
+      description: يرتب الخيارات من الأفضل إلى الأسوأ، أو يُعيد أفضل top_k منها فقط. تجيب عنه النماذج التي تُعيد مساراتها احتمالًا لكل خيار؛ وتُعيد النماذج الأخرى 400. تسرد الإجابة مفاتيح الخيارات المرتبة واحتمال أن يكون كل خيار هو الأفضل.
+      properties:
+        type:
+          type: string
+          enum:
+            - ranking
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+        criteria:
+          type: object
+          minProperties: 2
+          additionalProperties:
+            type: string
+            nullable: true
+        top_k:
+          type: integer
+          minimum: 1
+          description: يُعيد أفضل top_k خيارات فقط. بحد أقصى عدد المعايير.
     DecisionImage:
       type: object
       required:

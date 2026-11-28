@@ -175,6 +175,38 @@ Anfragen mit `state` und einer Map benannter Fragen funktionieren weiterhin und 
 Antworten verwenden dieselben Schlüssel wie `questions`. `choice`-Antworten enthalten die gewählte Option, Wahrscheinlichkeiten und Konfidenz; `noul`-Antworten eine Wahrscheinlichkeit von 0–1; `score`-Antworten einen wahrscheinlichkeitsgewichteten Wert, eine Legende, Wahrscheinlichkeiten und Konfidenz.
 
 <span id="choose-a-model"></span>
+### Optionen ordnen
+
+Eine `ranking`-Frage ordnet die Optionen in `criteria`, die beste zuerst. Sie nimmt `criteria` (mindestens zwei Optionen) und ein optionales `top_k`, das nur die besten `top_k` zurückgibt. Phaseo fragt das Modell, welche Option die beste ist, und ordnet die Optionen nach ihren Wahrscheinlichkeiten. Das funktioniert daher mit Modellen, deren Routen für jede Auswahloption eine Wahrscheinlichkeit liefern. Together Tev und Respan Span-01 tun das nicht, deshalb gibt eine Ranking-Frage an sie `400` mit `error: "unsupported_parameter"` zurück. Die Antwort enthält `ranking`, die Schlüssel der Optionen in Reihenfolge, und `probabilities`, die Wahrscheinlichkeit, dass jede Option die beste ist. Optionen mit gleicher Wahrscheinlichkeit behalten ihre Reihenfolge aus `criteria`, außer Schlüssel aus ganzen Zahlen wie `"10"`, die wie in jedem JSON-Objekt numerisch geordnet werden. Eine Ranking-Frage wird wie eine Auswahlfrage abgerechnet. Ranking funktioniert nur im älteren state-Format.
+
+```json
+{
+  "model": "liquid-ai/d1.2-ultra",
+  "state": "Customer on the free plan, wrote in twice this week about a failed export, prefers not to be called.",
+  "questions": {
+    "follow_up": {
+      "type": "ranking",
+      "instructions": "Best way to follow up, best first",
+      "criteria": { "email": "Email", "phone": "Phone call", "chat": "Live chat", "none": "No follow-up" },
+      "top_k": 2
+    }
+  }
+}
+```
+
+```json
+{
+  "model": "liquid-ai/d1.2-ultra",
+  "answers": {
+    "follow_up": {
+      "type": "ranking",
+      "ranking": ["email", "chat"],
+      "probabilities": { "email": 0.71, "phone": 0.04, "chat": 0.22, "none": 0.03 }
+    }
+  }
+}
+```
+
 ## Ein Modell wählen
 
 Prüfe die Modellverfügbarkeit, bevor du eines dieser Modelle aufrufst.

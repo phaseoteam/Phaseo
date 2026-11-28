@@ -458,6 +458,15 @@ describe("extractDiscoveredModels", () => {
 		] } });
 	});
 
+	it("reads Liquid AI's decision models by name", () => {
+		const models = extractListedModels("liquid-ai", { models: [
+			{ name: "d1.2-ultra", description: "", release_date: "2026-11-11", input_modalities: ["text", "image", "audio"] },
+			{ name: "d1-ultra", description: "", release_date: "2026-10-14", input_modalities: ["text", "image"] },
+		] });
+
+		expect(models.map((model) => model.id)).toEqual(["d1-ultra", "d1.2-ultra"]);
+	});
+
 	it("extracts model pricing from top-level array responses", () => {
 		const models = extractDiscoveredModels("together", [
 			{

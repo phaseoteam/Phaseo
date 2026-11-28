@@ -1104,6 +1104,13 @@ struct DecisionProviderOptions {
 	std::map<std::string, std::any> typesafe;
 };
 
+struct DecisionRankingQuestion {
+	std::map<std::string, std::any> criteria;
+	std::any instructions;
+	std::optional<int> top_k;
+	std::any type;
+};
+
 struct DecisionRefusalAnswer {
 	std::optional<std::string> name;
 	std::any type;

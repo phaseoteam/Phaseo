@@ -175,6 +175,38 @@ Las solicitudes con `state` y un mapa de preguntas con nombre siguen funcionando
 Las respuestas usan las mismas claves que `questions`. Las respuestas `choice` incluyen la opción seleccionada, las probabilidades y la confianza; las respuestas `noul` incluyen una probabilidad de 0 a 1; las respuestas `score` incluyen una puntuación ponderada por probabilidad, una leyenda, las probabilidades y la confianza.
 
 <span id="choose-a-model"></span>
+### Ordenar opciones
+
+Una pregunta `ranking` ordena las opciones de `criteria`, de la mejor a la peor. Recibe `criteria` (al menos dos opciones) y un `top_k` opcional que devuelve solo las `top_k` mejores. Phaseo pregunta al modelo cuál es la mejor opción y ordena las opciones según sus probabilidades, así que funciona con los modelos cuyas rutas devuelven una probabilidad para cada opción de elección. Together Tev y Respan Span-01 no lo hacen, así que una pregunta de ranking para ellos devuelve `400` con `error: "unsupported_parameter"`. La respuesta incluye `ranking`, las claves de las opciones en orden, y `probabilities`, la probabilidad de que cada opción sea la mejor. Las opciones con la misma probabilidad conservan su orden en `criteria`, salvo las claves que son números enteros, como `"10"`, que se ordenan numéricamente, como en cualquier objeto JSON. Una pregunta de ranking se factura como una pregunta de elección. El ranking solo funciona con el formato de estado antiguo.
+
+```json
+{
+  "model": "liquid-ai/d1.2-ultra",
+  "state": "Customer on the free plan, wrote in twice this week about a failed export, prefers not to be called.",
+  "questions": {
+    "follow_up": {
+      "type": "ranking",
+      "instructions": "Best way to follow up, best first",
+      "criteria": { "email": "Email", "phone": "Phone call", "chat": "Live chat", "none": "No follow-up" },
+      "top_k": 2
+    }
+  }
+}
+```
+
+```json
+{
+  "model": "liquid-ai/d1.2-ultra",
+  "answers": {
+    "follow_up": {
+      "type": "ranking",
+      "ranking": ["email", "chat"],
+      "probabilities": { "email": 0.71, "phone": 0.04, "chat": 0.22, "none": 0.03 }
+    }
+  }
+}
+```
+
 ## Elige un modelo
 
 Comprueba la disponibilidad del modelo antes de llamar a cualquiera de estos modelos.

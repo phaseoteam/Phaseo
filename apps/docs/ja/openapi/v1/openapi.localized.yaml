@@ -14907,6 +14907,7 @@ components:
               - $ref: '#/components/schemas/DecisionDateQuestion'
               - $ref: '#/components/schemas/DecisionSpansQuestion'
               - $ref: '#/components/schemas/DecisionBoxesQuestion'
+              - $ref: '#/components/schemas/DecisionRankingQuestion'
         provider_options:
           $ref: '#/components/schemas/DecisionProviderOptions'
         images:
@@ -15063,6 +15064,31 @@ components:
           minimum: 1
           maximum: 16
           description: 返すインスタンスの最大数（1〜16）。
+    DecisionRankingQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+        - criteria
+      additionalProperties: false
+      description: 選択肢を良い順に並べるか、上位 top_k 件だけを返します。各選択肢の確率を返すルートを持つモデルが回答し、それ以外は 400 を返します。回答には、並べ替えた選択肢のキーと、各選択肢が最良である確率が含まれます。
+      properties:
+        type:
+          type: string
+          enum:
+            - ranking
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+        criteria:
+          type: object
+          minProperties: 2
+          additionalProperties:
+            type: string
+            nullable: true
+        top_k:
+          type: integer
+          minimum: 1
+          description: 上位 top_k 件の選択肢だけを返します。最大で criteria の数までです。
     DecisionImage:
       type: object
       required:

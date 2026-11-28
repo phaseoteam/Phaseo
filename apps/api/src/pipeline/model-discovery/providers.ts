@@ -114,7 +114,6 @@ const PROVIDER_OVERRIDES: Record<string, ProviderOverride> = {
 		apiKeyEnv: ["DOUBLEWORD_API_KEY"],
 	},
 	ionrouter: { providerName: "IonRouter" },
-	"liquid-ai": { providerName: "Liquid AI", disabled: true },
 	moonshotai: { providerName: "Moonshot AI", apiKeyEnv: ["MOONSHOT_AI_API_KEY"] },
 	mara: { providerName: "MARA" },
 	"moonshotai-turbo": { providerName: "Moonshot AI Turbo", apiKeyEnv: ["MOONSHOT_AI_API_KEY"] },
@@ -242,6 +241,15 @@ const NATIVE_DISCOVERY_PROVIDERS: ProviderConfig[] = [
 		modelsEndpoint: "https://api.llmgateway.io/v1/models",
 		apiKeyEnv: ["LLMGATEWAY_API_KEY"],
 		authStyle: "optional_bearer",
+	},
+	{
+		// Liquid's OpenAI-compatible /v1/models answers 404; its hosted d1 decision models
+		// are listed here as {"models":[{"name":"d1.2-ultra", ...}]}.
+		providerId: "liquid-ai",
+		providerName: "Liquid AI",
+		modelsEndpoint: "https://api.liquid.ai/decisions/v1/models",
+		apiKeyEnv: ["LIQUID_AI_API_KEY"],
+		authStyle: "bearer",
 	},
 	{
 		providerId: "fastino",
