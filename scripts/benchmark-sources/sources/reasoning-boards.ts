@@ -141,13 +141,31 @@ export const lisanBench: BenchmarkSource = {
 // ShadowBench (Hugging Face dataset) ------------------------------------------------------------------------------
 
 const SHADOW = "https://perpetualresearch.si/shadowbench/";
-const SHADOW_ROWS = "https://datasets-server.huggingface.co/first-rows?dataset=perpetual-research%2Fshadowbench&config=leaderboard&split=results";
+// `/first-rows` stops at a 100-row preview without saying so, so the split is read in pages from `/rows`.
+const SHADOW_ROWS = "https://datasets-server.huggingface.co/rows?dataset=perpetual-research%2Fshadowbench&config=leaderboard&split=results";
+const HF_PAGE = 100;
 
 type ShadowRow = { kind?: string; model?: string; model_name?: string; effort?: string | null; score?: number; ci_low?: number; ci_high?: number; cost_usd_per_episode?: number | null; minutes_per_episode?: number | null };
+type HfRowsPage<Row> = { rows?: Array<{ row: Row }>; num_rows_total?: number; partial?: boolean };
 
-export function parseShadowBench(json: { rows?: Array<{ row: ShadowRow }>; truncated?: boolean }): SourceObservation[] {
+/** Every row of a Hugging Face dataset split, page by page. A partial split or a short read fails the run. */
+export async function hfRows<Row>(fetchPage: (offset: number, length: number) => Promise<HfRowsPage<Row>>): Promise<{ rows: Array<{ row: Row }> }> {
+	const rows: Array<{ row: Row }> = [];
+	let total = Infinity;
+	while (rows.length < total) {
+		const page = await fetchPage(rows.length, HF_PAGE);
+		if (!Array.isArray(page?.rows) || typeof page.num_rows_total !== "number") throw new Error("Hugging Face rows format changed: expected rows[] and num_rows_total.");
+		if (page.partial) throw new Error("Hugging Face only has a partial copy of the dataset split.");
+		total = page.num_rows_total;
+		if (!page.rows.length) break;
+		rows.push(...page.rows);
+	}
+	if (rows.length !== total) throw new Error(`Hugging Face returned ${rows.length} of ${total} rows.`);
+	return { rows };
+}
+
+export function parseShadowBench(json: { rows?: Array<{ row: ShadowRow }> }): SourceObservation[] {
 	if (!Array.isArray(json?.rows)) throw new Error("ShadowBench format changed: expected rows[].");
-	if (json.truncated) throw new Error("ShadowBench leaderboard no longer fits in one page of rows.");
 	return json.rows.flatMap(({ row }) => {
 		// "reference" rows are baselines (a featureless blob, blind search, hands at rest).
 		if (row.kind !== "model" || !row.model_name || typeof row.score !== "number") return [];
@@ -173,7 +191,7 @@ export const shadowBench: BenchmarkSource = {
 	minRows: 11,
 	benchmarks: [{ id: "shadowbench", name: "ShadowBench", url: SHADOW, category: "vision", type: "numerical", higherIsBetter: true, unit: "score", description: "The model poses two 3D hands between a lamp and a screen, one tool call at a time, until their shadow matches an animal from a nineteenth-century hand-shadow book. Score from 0 to 100 for how closely the shadow matches, over 20 targets, with a confidence interval." }],
 	async fetch(ctx) {
-		return parseShadowBench(await ctx.fetchJson(SHADOW_ROWS));
+		return parseShadowBench(await hfRows<ShadowRow>((offset, length) => ctx.fetchJson(`${SHADOW_ROWS}&offset=${offset}&length=${length}`)));
 	},
 };
 

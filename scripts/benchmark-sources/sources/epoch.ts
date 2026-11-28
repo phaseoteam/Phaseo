@@ -1,3 +1,4 @@
+import { splitEffort } from "../match";
 import { parseCsv, parseNumber } from "../parse";
 import type { BenchmarkDefinition, BenchmarkSource, SourceContext, SourceObservation } from "../types";
 
@@ -56,6 +57,18 @@ export function epochLabel(name: string): { label: string; config?: string } {
 	return PROVIDERS.test(first) ? { label } : { label, config: first };
 }
 
+/**
+ * The effort a run's model id ends with: "glm-5.2_max" → "max", "claude-haiku-4-5-20251001_32K" → "32k thinking".
+ * The display name often omits it ("GLM-5.2" for the _max, _low and _none runs), so the id is what keeps runs apart.
+ */
+export function epochEffort(modelId: string): string | undefined {
+	const suffix = modelId.includes("_") ? modelId.slice(modelId.lastIndexOf("_") + 1) : "";
+	if (!suffix) return undefined;
+	const budget = suffix.match(/^(\d+)k$/i);
+	if (budget) return `${budget[1]}k thinking`;
+	return splitEffort(`model (${suffix})`).effort ?? undefined;
+}
+
 /** Latest successful run per task × Epoch model id (the id carries the effort, e.g. "gpt-6_high"). */
 export function parseEpochRuns(csv: string, tasks: Task[]): SourceObservation[] {
 	const records = parseCsv(csv.replace(/^﻿/, ""));
@@ -74,10 +87,14 @@ export function parseEpochRuns(csv: string, tasks: Task[]): SourceObservation[] 
 		const score = parseNumber(row.mean_score) ?? parseNumber(row["Best score (across scorers)"]);
 		if (score === null || score < 0 || score > 1) return [];
 		const error = parseNumber(row.stderr);
+		// The run's effort comes from its model id. The display name can leave it out, and "Unique display name" can
+		// name a different one ("GPT-5 mini (medium)" for the _low id); an explicit effort outranks the label's.
 		const { label, config } = epochLabel(row["Display name"] || row["Unique display name"] || row.model);
+		const effort = epochEffort(row.model);
 		return [{
 			benchmarkId: byTask.get(row.task)!.id,
 			label,
+			...(effort ? { effort } : {}),
 			...(config ? { config } : {}),
 			value: score * 100,
 			ciLow: error !== null ? Math.max(0, (score - 1.96 * error) * 100) : undefined,

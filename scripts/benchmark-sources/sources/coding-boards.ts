@@ -24,7 +24,7 @@ export function parseDeepSwe(file: { generated_at?: string; rows?: DeepSweRow[] 
 		ciLow: typeof row.ci_lo === "number" ? row.ci_lo * 100 : undefined,
 		ciHigh: typeof row.ci_hi === "number" ? row.ci_hi * 100 : undefined,
 		costUsd: row.mean_cost_usd,
-		outputTokens: typeof row.mean_output_tokens === "number" ? Math.round(row.mean_output_tokens) : undefined,
+		outputTokens: typeof row.mean_output_tokens === "number" ? row.mean_output_tokens : undefined,
 		durationSeconds: row.mean_duration_seconds,
 		observedOn: file.generated_at?.slice(0, 10),
 	}]));
@@ -262,7 +262,7 @@ function longtailModel(cell: string): { label: string; effort?: string } {
 	const match = cell.match(/^([\s\S]*?)<small>([\s\S]*?)<\/small>/);
 	const label = withClaudeFamily(htmlText(match ? match[1] : cell));
 	const effort = match ? htmlText(match[2]) : undefined;
-	return { label, effort: effort && effort !== "thinking" ? effort : undefined };
+	return { label, effort: effort || undefined };
 }
 
 export function parseLongTail(html: string): SourceObservation[] {

@@ -295,11 +295,21 @@ export const gdpx: BenchmarkSource = {
 	async fetch(ctx) {
 		const html = await ctx.fetchText(GDPX);
 		const js = await scriptWith(ctx, pageScripts(html, GDPX, /\/_next\/static\/immutable\/chunks\/[\w.-]+\.js/g), `JSON.parse('{"updatedAt"`);
-		const literal = js?.match(/JSON\.parse\('(\{"updatedAt"[\s\S]*?\})'\)/)?.[1];
-		const data = literal ? (JSON.parse(literal.replace(/\\([\\'])/g, "$1")) as { models?: GdpxModel[] }) : undefined;
-		return parseGdpx(html, data?.models);
+		return parseGdpx(html, gdpxModels(js));
 	},
 };
+
+/**
+ * Each model's harness and effort, from the `JSON.parse('{"updatedAt"…')` literal in the page's scripts. Without it the
+ * rows would lose both and get new ids, so the run fails and the stored results stay.
+ */
+export function gdpxModels(js: string | undefined): GdpxModel[] {
+	const literal = js?.match(/JSON\.parse\('(\{"updatedAt"[\s\S]*?\})'\)/)?.[1];
+	if (!literal) throw new Error("GDPx model metadata script not found.");
+	const models = (JSON.parse(literal.replace(/\\([\\'])/g, "$1")) as { models?: GdpxModel[] }).models;
+	if (!Array.isArray(models) || !models.length) throw new Error("GDPx format changed: expected models[] in the metadata script.");
+	return models;
+}
 
 // Julius DeepFinance -----------------------------------------------------------------------------------------------
 

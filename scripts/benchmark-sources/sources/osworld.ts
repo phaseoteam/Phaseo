@@ -42,7 +42,7 @@ export function parseOsworld2(file: V2File): SourceObservation[] {
 			harness: row.toolSetting || undefined,
 			value: row.binaryAccuracy!,
 			costUsd: typeof row.estimatedCostUsd === "number" ? row.estimatedCostUsd : undefined,
-			outputTokens: typeof row.outputTokensPerTask === "number" ? Math.round(row.outputTokensPerTask) : undefined,
+			outputTokens: typeof row.outputTokensPerTask === "number" ? row.outputTokensPerTask : undefined,
 			observedOn: file.updatedAt,
 			note: `Release ${version}, ${budget} steps${typeof row.partialScore === "number" ? `, partial score ${row.partialScore}%` : ""}`,
 		})));
@@ -59,10 +59,14 @@ export function parseOsworldVerified(rows: string[][]): SourceObservation[] {
 	if ([model, approach, steps, rate].some((index) => index < 0)) throw new Error("OSWorld-Verified workbook columns changed.");
 	return body.flatMap((row) => {
 		const value = parseNumber(row[rate]);
-		// "claude-opus-5[1m]": the bracket names a context setting, not a different model.
-		const label = (row[model] ?? "").replace(/\[[^\]]*\]\s*$/, "").trim();
+		// "claude-opus-5[1m]": the bracket names a context setting, not a different model. It is kept as the configuration
+		// so the 1M-context run isn't merged with the standard one.
+		const name = row[model] ?? "";
+		const setting = name.match(/\[([^\]]*)\]\s*$/)?.[1].trim();
+		const label = name.replace(/\[[^\]]*\]\s*$/, "").trim();
 		if (!label || value === null || !MODEL_APPROACHES.has(row[approach])) return [];
-		return [{ benchmarkId: "osworld-verified", label, value, note: `${row[steps] || "?"} max steps` }];
+		const config = setting ? (/^\d+[km]$/i.test(setting) ? `${setting.toUpperCase()} context` : setting) : undefined;
+		return [{ benchmarkId: "osworld-verified", label, ...(config ? { config } : {}), value, note: `${row[steps] || "?"} max steps` }];
 	});
 }
 

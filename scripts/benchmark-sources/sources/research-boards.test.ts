@@ -2,14 +2,14 @@ import assert from "node:assert/strict";
 import { deflateRawSync } from "node:zlib";
 import { describe, it } from "node:test";
 import { xlsxRows } from "../xlsx";
-import { parseBlueprintBench2, parseButterBench, parseCorpoBench, parseDeepFinance, parseExploitBench, parseFrontierBreach, parseFrontierDesign, parseFrontierMemory, parseFrontierPhysics, parseGdpx, parseRweBench, parseSolidworksBench, parseVendingBench2 } from "./agent-boards";
+import { parseBlueprintBench2, parseButterBench, parseCorpoBench, parseDeepFinance, parseExploitBench, parseFrontierBreach, parseFrontierDesign, parseFrontierMemory, parseFrontierPhysics, gdpxModels, parseGdpx, parseRweBench, parseSolidworksBench, parseVendingBench2 } from "./agent-boards";
 import { parseCursorBench, parseDeepSwe, parseFrontierCode, parseFrontierCs, parseFrontierRsi, parseFrontierSwe, parseKernelBench, parseLongTail, parsePostTrainBench } from "./coding-boards";
-import { epochLabel, parseEpochRuns } from "./epoch";
+import { epochEffort, epochLabel, parseEpochRuns } from "./epoch";
 import { epochTasks, frontierMath } from "./epoch";
 import { latestCompetition, parseMathArenaOverall, parseMathArenaTable } from "./matharena";
 import { metrLabel, parseMetr } from "./metr";
 import { parseOsworld2, parseOsworldVerified } from "./osworld";
-import { lisanModel, parseBabyVision, parseHoneyBench, parseKaggleLeaderboard, parseLisanBench, parsePenaltyBench, parseShadowBench, parseSimpleBench, parseZeroBench } from "./reasoning-boards";
+import { hfRows, lisanModel, parseBabyVision, parseHoneyBench, parseKaggleLeaderboard, parseLisanBench, parsePenaltyBench, parseShadowBench, parseSimpleBench, parseZeroBench } from "./reasoning-boards";
 import { hubActionResult, hubLeaderboardId, parseHubLeaderboard } from "./terminal-bench";
 
 const flight = (payload: string) => `<script>self.__next_f.push([1,${JSON.stringify(payload)}])</script>`;
@@ -48,6 +48,30 @@ describe("Epoch AI", () => {
 		if (!task) throw new Error("Epoch GPQA definition missing");
 		const rows = parseEpochRuns(pair, [{ task: "GPQA diamond", definition: task }]);
 		assert.deepEqual(rows.map((row) => [row.label, row.config, row.value]), [["Claude Opus 5.5 (max)", undefined, 86], ["Claude Opus 5.5 (max)", "with fallback", 90]]);
+	});
+
+	it("keeps each run's effort from its model id when the display name leaves it out", () => {
+		// Live export rows: the GLM-5.2 runs share one display name; the effort is only in the model id.
+		const runs = [
+			"id_runs,task,model,Best score (across scorers),started_at,Status,Display name,Unique display name,mean_score,stderr",
+			"r1,GPQA diamond,glm-5.2_max,0.8,2026-11-01T00:00:00Z,Success,GLM-5.2,GLM-5.2 (max),0.8,",
+			"r2,GPQA diamond,glm-5.2_none,0.6,2026-11-01T00:00:00Z,Success,GLM-5.2,GLM-5.2 (none),0.6,",
+			"r3,GPQA diamond,gpt-5-mini-2025-08-07_low,0.7,2026-11-01T00:00:00Z,Success,GPT-5 mini (low),GPT-5 mini (medium),0.7,",
+			"r4,GPQA diamond,claude-haiku-4-5-20251001_32K,0.65,2026-11-01T00:00:00Z,Success,,,0.65,",
+			"r5,GPQA diamond,gpt-4o,0.5,2026-11-01T00:00:00Z,Success,GPT-4o,GPT-4o,0.5,",
+		].join("\n");
+		const task = epochTasks.benchmarks.find((definition) => definition.id.startsWith("gpqa"));
+		if (!task) throw new Error("Epoch GPQA definition missing");
+		const rows = parseEpochRuns(runs, [{ task: "GPQA diamond", definition: task }]);
+		assert.deepEqual(rows.map((row) => [row.label, row.effort, Math.round(row.value)]), [
+			["GLM-5.2", "max", 80],
+			["GLM-5.2", "none", 60],
+			["GPT-5 mini (low)", "low", 70],
+			["claude-haiku-4-5-20251001_32K", "32k thinking", 65],
+			["GPT-4o", undefined, 50],
+		]);
+		assert.equal(epochEffort("gpt-5.2-pro-2025-12-11_xhigh"), "xhigh");
+		assert.equal(epochEffort("gemini-3.5-flash_minimal"), "minimal");
 	});
 
 	it("reads FrontierMath tiers from the same export", () => {
@@ -101,6 +125,11 @@ describe("Terminal-Bench", () => {
 		assert.deepEqual([row.label, row.effort, row.harness, row.value, row.costUsd, row.outputTokens], ["Claude Opus 5.5", "max", "Claude Code", 64.85, 10, 10000]);
 	});
 
+	it("keeps a fractional mean of output tokens per trial", () => {
+		const [row] = parseHubLeaderboard({ rows: [{ status: "display", metadata: { model_display: "GPT-6 Astra" }, metrics: { accuracy: 50, n_trials: 2, output_tokens: 3 } }] }, "terminal-bench-4.0");
+		assert.equal(row.outputTokens, 1.5);
+	});
+
 	it("finds the leaderboard id in the page payload", () => {
 		assert.equal(hubLeaderboardId(flight('72:["$","$L74",null,{"leaderboards":[{"id":"f58e955f-4db5-48a0-87ec-1c324a4a9414","name":"2-0"}]}]')), "f58e955f-4db5-48a0-87ec-1c324a4a9414");
 	});
@@ -111,26 +140,28 @@ describe("OSWorld", () => {
 		const rows = parseOsworld2({
 			defaultStepBudget: 500, defaultResultReleaseVersion: "v2026.06.24", defaultResultDatasetScope: "full", releaseVersions: ["v2026.06.24", "v2026.08.08", "v2.1"],
 			results: [
-				{ model: "Claude Opus 5", reasoning: "max", toolSetting: "batch tool", stepBudget: 500, releaseVersion: "v2026.08.08", datasetScope: "full", binaryAccuracy: 31.43, official: true, modelType: "e2e" },
+				{ model: "Claude Opus 5", reasoning: "max", toolSetting: "batch tool", stepBudget: 500, releaseVersion: "v2026.08.08", datasetScope: "full", binaryAccuracy: 31.43, outputTokensPerTask: 123.4, official: true, modelType: "e2e" },
 				{ model: "Claude Opus 5", reasoning: "max", stepBudget: 500, releaseVersion: "v2026.08.08", datasetScope: "offline", binaryAccuracy: 34.7, official: true },
 				{ model: "Old", stepBudget: 500, binaryAccuracy: 10, official: true },
 				{ model: "Darwinx w/ Claude Opus 4.8", stepBudget: 500, releaseVersion: "v2.1", datasetScope: "full", binaryAccuracy: 44, modelType: "agent" },
 				{ model: "MuseSpark 1.3", reasoning: "max", stepBudget: 500, releaseVersion: "v2.1", datasetScope: "full", binaryAccuracy: 39.25, official: true },
 			],
 		});
-		assert.deepEqual(rows.map((row) => [row.benchmarkId, row.label, row.value, row.harness]), [["osworld-2.0", "Claude Opus 5", 31.43, "batch tool"], ["osworld-2.1", "MuseSpark 1.3", 39.25, undefined]]);
+		assert.deepEqual(rows.map((row) => [row.benchmarkId, row.label, row.value, row.harness, row.outputTokens]), [["osworld-2.0", "Claude Opus 5", 31.43, "batch tool", 123.4], ["osworld-2.1", "MuseSpark 1.3", 39.25, undefined, undefined]]);
 	});
 
 	it("reads the Verified workbook's general and specialised models", () => {
-		const rows = parseOsworldVerified([["Model", "Approach type", "Max steps", "Success rate"], ["claude-opus-5[1m]", "General model", "100", "72.1"], ["agent-s3", "Agentic framework", "100", "80"], ["UI-TARS-2", "Specialized model", "50", "47.5"]]);
-		assert.deepEqual(rows.map((row) => [row.label, row.value]), [["claude-opus-5", 72.1], ["UI-TARS-2", 47.5]]);
+		const rows = parseOsworldVerified([["Model", "Approach type", "Max steps", "Success rate"], ["claude-opus-5[1m]", "General model", "100", "72.1"], ["claude-opus-5", "General model", "100", "70.4"], ["agent-s3", "Agentic framework", "100", "80"], ["UI-TARS-2", "Specialized model", "50", "47.5"]]);
+		// The 1M-context run keeps its setting as the configuration, so it stays apart from the standard run.
+		assert.deepEqual(rows.map((row) => [row.label, row.config, row.value]), [["claude-opus-5", "1M context", 72.1], ["claude-opus-5", undefined, 70.4], ["UI-TARS-2", undefined, 47.5]]);
 	});
 
 	it("reads cells from a minimal xlsx workbook", () => {
 		const entry = (name: string, text: string) => ({ name, data: deflateRawSync(Buffer.from(text)) });
+		// B1 lists t before r, and C1 is an inline string split into rich-text runs.
 		const files = [
-			entry("xl/sharedStrings.xml", "<sst><si><t>Model</t></si><si><t>o3</t></si></sst>"),
-			entry("xl/worksheets/sheet1.xml", '<worksheet><sheetData><row r="1"><c r="A1" t="s"><v>0</v></c><c r="C1" t="inlineStr"><is><t>Rate</t></is></c></row><row r="2"><c r="A2" t="s"><v>1</v></c><c r="C2"><v>23</v></c></row></sheetData></worksheet>'),
+			entry("xl/sharedStrings.xml", "<sst><si><t>Model</t></si><si><r><t>o</t></r><r><t>3</t></r></si></sst>"),
+			entry("xl/worksheets/sheet1.xml", '<worksheet><sheetData><row r="1"><c r="A1" t="s"><v>0</v></c><c t="inlineStr" r="B1"><is><t>Approach type</t></is></c><c r="C1" s="2" t="inlineStr"><is><r><t>Ra</t></r><r><rPr><b/></rPr><t xml:space="preserve">te</t></r></is></c></row><row r="2"><c r="A2" t="s"><v>1</v></c><c r="C2"><v>23</v></c></row></sheetData></worksheet>'),
 		];
 		const locals: Buffer[] = [];
 		const central: Buffer[] = [];
@@ -158,7 +189,7 @@ describe("OSWorld", () => {
 		end.writeUInt16LE(files.length, 10);
 		end.writeUInt32LE(directory.length, 12);
 		end.writeUInt32LE(offset, 16);
-		assert.deepEqual(xlsxRows(Buffer.concat([...locals, directory, end])), [["Model", "", "Rate"], ["o3", "", "23"]]);
+		assert.deepEqual(xlsxRows(Buffer.concat([...locals, directory, end])), [["Model", "Approach type", "Rate"], ["o3", "", "23"]]);
 	});
 });
 
@@ -193,6 +224,20 @@ describe("reasoning boards", () => {
 		assert.deepEqual(parseHoneyBench(honey).map((row) => [row.label, row.value, row.ciLow, row.ciHigh]), [["Claude Opus 5.5", 31.6, 27.1, 36.6]]);
 	});
 
+	it("ShadowBench reads every page of the Hugging Face split and refuses a short read", async () => {
+		const all = Array.from({ length: 130 }, (_, index) => ({ row: { kind: "model", model_name: `M${index}`, score: index } }));
+		const offsets: number[] = [];
+		const { rows } = await hfRows(async (offset, length) => {
+			offsets.push(offset);
+			return { rows: all.slice(offset, offset + length), num_rows_total: all.length, partial: false };
+		});
+		assert.deepEqual(offsets, [0, 100]);
+		assert.equal(parseShadowBench({ rows }).length, 130);
+		// A server that stops at the 100-row preview no longer passes silently.
+		await assert.rejects(hfRows(async (offset) => ({ rows: offset ? [] : all.slice(0, 100), num_rows_total: 130 })), /100 of 130/);
+		await assert.rejects(hfRows(async () => ({ rows: all.slice(0, 10), num_rows_total: 10, partial: true })), /partial/);
+	});
+
 	it("ZeroBench and BabyVision read their tables", () => {
 		const zero = '<table id="sortableTable"><tr><th>x</th></tr><tr> <td>GPT-6 Astra (max)</td> <td class="metric-cell bar-pass1" data-sort="43.2"><b>43.2</b></td> <td>52</td> <td>35</td> <td data-sort="0.558">$0.56</td> </tr></table>';
 		assert.deepEqual(parseZeroBench(zero), [{ benchmarkId: "zerobench", label: "GPT-6 Astra (max)", value: 43.2, costUsd: 0.558 }]);
@@ -203,7 +248,7 @@ describe("reasoning boards", () => {
 
 describe("coding boards", () => {
 	it("DeepSWE, FrontierSWE and FrontierCode", () => {
-		assert.deepEqual(parseDeepSwe({ generated_at: "2026-11-20T00:00:00Z", rows: [{ model: "gpt-6-astra", harness: "mini-swe-agent", reasoning_effort: "xhigh", pass_at_1: 0.741, ci_lo: 0.712, ci_hi: 0.77 }] }).map((row) => [row.label, row.effort, Math.round(row.value * 10) / 10]), [["gpt-6-astra", "xhigh", 74.1]]);
+		assert.deepEqual(parseDeepSwe({ generated_at: "2026-11-20T00:00:00Z", rows: [{ model: "gpt-6-astra", harness: "mini-swe-agent", reasoning_effort: "xhigh", pass_at_1: 0.741, ci_lo: 0.712, ci_hi: 0.77, mean_output_tokens: 123.4 }] }).map((row) => [row.label, row.effort, Math.round(row.value * 10) / 10, row.outputTokens]), [["gpt-6-astra", "xhigh", 74.1, 123.4]]);
 		const swe = flight('18:["$","$L27",null,{"entries":{"abs":{"best":[],"mean":[{"model":"Claude Fable 5.2","harness":"proximus","overall":69.9,"avgCostUsd":168.7}]}}}]');
 		assert.deepEqual(parseFrontierSwe(swe).map((row) => [row.label, row.harness, row.value]), [["Claude Fable 5.2", "proximus", 69.9]]);
 		const code = parseFrontierCode({ harness: { "SWE-1.6": "devin-cli" }, data: { "SWE-1.6": { na: { main: { new_score: 0.4, cost: 1.2 } } } } }, { main: "frontiercode-2.0" });
@@ -223,6 +268,11 @@ describe("coding boards", () => {
 	it("LongTail-SWE overall and per language", () => {
 		const html = '<table id="leaderboard"><tr data-p1="82.01" data-p3="89.6" class="top"><td class="l rk">1</td><td class="l m">Opus 5.5<small>high</small></td><td class="mono">1M</td><td class="sc">82.0<span class="pm"> ±1.2</span></td></tr></table><table id="languages"><tr><th class="l">Language</th><th>N</th><th>Opus 5.5<small>high</small></th></tr><tr><td class="l m">F#</td><td class="n">16</td><td class="best">82.1</td></tr><tr><td class="l m">Overall</td><td class="n">202</td><td>82.0</td></tr></table>';
 		assert.deepEqual(parseLongTail(html).map((row) => [row.benchmarkId, row.label, row.effort, row.value]), [["longtail-swe", "Claude Opus 5.5", "high", 82.01], ["longtail-swe-fsharp", "Claude Opus 5.5", "high", 82.1]]);
+	});
+
+	it("LongTail-SWE keeps a published thinking setting", () => {
+		const html = '<table id="leaderboard"><tr data-p1="61.5"><td class="l m">DeepSeek V4<small>thinking</small></td></tr><tr data-p1="55"><td class="l m">DeepSeek V4</td></tr></table><table id="languages"><tr><th class="l">Language</th><th>N</th><th>DeepSeek V4<small>thinking</small></th></tr><tr><td class="l m">Lua</td><td class="n">10</td><td>60</td></tr></table>';
+		assert.deepEqual(parseLongTail(html).map((row) => [row.benchmarkId, row.label, row.effort, row.value]), [["longtail-swe", "DeepSeek V4", "thinking", 61.5], ["longtail-swe", "DeepSeek V4", undefined, 55], ["longtail-swe-lua", "DeepSeek V4", "thinking", 60]]);
 	});
 
 	it("PostTrainBench and FrontierRSI", () => {
@@ -259,6 +309,10 @@ describe("agent boards", () => {
 		// November 2026 markup adds classes after font-medium.
 		const gdpxNov = '<span class="min-w-0 text-[15px] font-medium leading-snug">GPT 6.2 Astra</span></span><span class="block text-sm font-semibold">19.3<!-- -->%</span>';
 		assert.deepEqual(parseGdpx(gdpxNov).map((row) => [row.label, row.value]), [["GPT 6.2 Astra", 19.3]]);
+		assert.deepEqual(gdpxModels(`x=JSON.parse('{"updatedAt":"2026-11-20","models":[{"name":"Claude Fable 5.2","harness":"Claude Code","reasoning":"Max"}]}')`), [{ name: "Claude Fable 5.2", harness: "Claude Code", reasoning: "Max" }]);
+		// Without the metadata the rows would lose harness and effort and replace the stored ones, so the run fails.
+		assert.throws(() => gdpxModels(undefined), /metadata script not found/);
+		assert.throws(() => gdpxModels(`JSON.parse('{"updatedAt":"2026-11-20"}')`), /expected models/);
 		const finance = flight('9:["$","$L1e",null,{"results":[{"rank":1,"model":"Claude Fable 5.2","reasoning":"max","score":62,"ciLow":51.5,"ciHigh":72.7,"costPerTask":37.8}]}]');
 		assert.deepEqual(parseDeepFinance(finance).map((row) => [row.label, row.effort, row.value, row.costUsd]), [["Claude Fable 5.2", "max", 62, 37.8]]);
 	});

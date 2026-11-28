@@ -29,20 +29,25 @@ export function unzip(buffer: Buffer): Map<string, Buffer> {
 
 const columnIndex = (reference: string) => [...reference.replace(/\d+$/, "")].reduce((total, char) => total * 26 + char.charCodeAt(0) - 64, 0) - 1;
 
+/** Text of a string item. Rich-text runs are joined as written, with no space between them. */
+const runsText = (item: string) => htmlText([...item.matchAll(/<t(?:\s[^>]*)?>([\s\S]*?)<\/t>/g)].map((text) => text[1]).join(""));
+
 /** The first worksheet of an xlsx workbook as rows of cell text (shared and inline strings resolved). */
 export function xlsxRows(buffer: Buffer): string[][] {
 	const files = unzip(buffer);
-	const shared = [...(files.get("xl/sharedStrings.xml")?.toString("utf8") ?? "").matchAll(/<si>([\s\S]*?)<\/si>/g)]
-		.map((item) => htmlText([...item[1].matchAll(/<t[^>]*>([\s\S]*?)<\/t>/g)].map((text) => text[1]).join("")));
+	const shared = [...(files.get("xl/sharedStrings.xml")?.toString("utf8") ?? "").matchAll(/<si>([\s\S]*?)<\/si>/g)].map((item) => runsText(item[1]));
 	const sheet = files.get("xl/worksheets/sheet1.xml")?.toString("utf8");
 	if (!sheet) throw new Error("Workbook has no first sheet.");
 	return [...sheet.matchAll(/<row[^>]*>([\s\S]*?)<\/row>/g)].map((row) => {
 		const cells: string[] = [];
-		for (const cell of row[1].matchAll(/<c r="([A-Z]+\d+)"([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)) {
-			const [, reference, attributes, body = ""] = cell;
-			const type = attributes.match(/t="(\w+)"/)?.[1];
+		// XML attribute order is insignificant, so r and t are read wherever they sit in the tag.
+		for (const cell of row[1].matchAll(/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)) {
+			const [, attributes, body = ""] = cell;
+			const reference = attributes.match(/\sr="([A-Z]+\d+)"/)?.[1];
+			if (!reference) continue;
+			const type = attributes.match(/\st="(\w+)"/)?.[1];
 			const value = body.match(/<v>([\s\S]*?)<\/v>/)?.[1] ?? "";
-			const text = type === "s" ? shared[Number(value)] ?? "" : type === "inlineStr" ? htmlText(body) : htmlText(value);
+			const text = type === "s" ? shared[Number(value)] ?? "" : type === "inlineStr" ? runsText(body) : htmlText(value);
 			cells[columnIndex(reference)] = text;
 		}
 		return Array.from(cells, (cell) => cell ?? "");

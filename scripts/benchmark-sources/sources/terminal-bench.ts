@@ -47,7 +47,7 @@ export function parseHubLeaderboard(board: HubLeaderboard, benchmarkId: string):
 			ciHigh: typeof half === "number" ? Math.min(100, accuracy + half) : undefined,
 			// The board publishes totals across every trial; per-trial figures compare across rows.
 			costUsd: trials && typeof row.metrics?.total_cost_usd === "number" ? row.metrics.total_cost_usd / trials : undefined,
-			outputTokens: trials && typeof row.metrics?.output_tokens === "number" ? Math.round(row.metrics.output_tokens / trials) : undefined,
+			outputTokens: trials && typeof row.metrics?.output_tokens === "number" ? row.metrics.output_tokens / trials : undefined,
 			durationSeconds: row.metrics?.avg_trial_duration_sec,
 			observedOn: row.metadata?.date,
 		}];
