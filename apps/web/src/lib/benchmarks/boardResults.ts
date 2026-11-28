@@ -291,14 +291,13 @@ export function showEffortFilter(efforts: string[], hasUntagged: boolean, active
 }
 
 /**
- * The board's outbound link. A registered source URL opens that source under its name; otherwise
- * the benchmark's own page opens under a generic label, so the label never names a publisher the
- * link doesn't go to.
+ * The board's outbound link. The benchmark's own page comes first, labelled with the publisher's name
+ * only when it is on the publisher's site; the registered source URL is the fallback. The label never
+ * names a publisher the link doesn't go to.
  */
 export function boardSourceLink(benchmarkLink: string | null | undefined, source: { url?: string | null; publisher?: string | null; name?: string | null } | null | undefined): { href: string; sourceName: string | null } | null {
 	const sourceName = source?.publisher ?? source?.name ?? null;
-	// A source can publish several boards (WeirdML v2 and v3), so the benchmark's own page wins. The publisher's
-	// name labels it only when it is on the publisher's site; otherwise the generic label is used.
+	// A source can publish several boards (WeirdML v2 and v3), so the benchmark's own page wins.
 	if (benchmarkLink) return { href: benchmarkLink, sourceName: source?.url && sameHost(benchmarkLink, source.url) ? sourceName : null };
 	if (source?.url) return { href: source.url, sourceName };
 	return null;
