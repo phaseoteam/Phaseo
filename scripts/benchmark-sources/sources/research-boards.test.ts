@@ -4,7 +4,7 @@ import { describe, it } from "node:test";
 import { xlsxRows } from "../xlsx";
 import { parseBlueprintBench2, parseButterBench, parseCorpoBench, parseDeepFinance, parseExploitBench, parseFrontierBreach, parseFrontierDesign, parseFrontierMemory, parseFrontierPhysics, parseGdpx, parseRweBench, parseSolidworksBench, parseVendingBench2 } from "./agent-boards";
 import { parseCursorBench, parseDeepSwe, parseFrontierCode, parseFrontierCs, parseFrontierRsi, parseFrontierSwe, parseKernelBench, parseLongTail, parsePostTrainBench } from "./coding-boards";
-import { parseEpochRuns } from "./epoch";
+import { epochLabel, parseEpochRuns } from "./epoch";
 import { epochTasks, frontierMath } from "./epoch";
 import { latestCompetition, parseMathArenaOverall, parseMathArenaTable } from "./matharena";
 import { metrLabel, parseMetr } from "./metr";
@@ -32,6 +32,22 @@ describe("Epoch AI", () => {
 		assert.ok(Math.abs(rows[0].ciLow! - 50.2) < 1e-9);
 		assert.equal(rows[0].observedOn, "2026-11-01");
 		assert.equal(rows[1].label, "Kimi K3.1 Pro (max)");
+		assert.equal(rows[1].config, undefined);
+	});
+
+	it("keeps configurations Epoch runs separately apart from the standalone run", () => {
+		assert.deepEqual(epochLabel("Claude Opus 5.5 (with fallback, max)"), { label: "Claude Opus 5.5 (max)", config: "with fallback" });
+		assert.deepEqual(epochLabel("GPT-6 Astra (pro, max)"), { label: "GPT-6 Astra (max)", config: "pro" });
+		assert.deepEqual(epochLabel("Kimi K3.1 Pro (Together, max)"), { label: "Kimi K3.1 Pro (max)" });
+		const pair = [
+			"id_runs,task,model,Best score (across scorers),started_at,Status,Display name,mean_score,stderr",
+			"r1,GPQA diamond,claude-opus-5-5_max,0.86,2026-11-01T00:00:00Z,Success,Claude Opus 5.5 (max),0.86,",
+			"r2,GPQA diamond,claude-opus-5-5-fallback_max,0.9,2026-11-01T00:00:00Z,Success,\"Claude Opus 5.5 (with fallback, max)\",0.9,",
+		].join("\n");
+		const task = epochTasks.benchmarks.find((definition) => definition.id.startsWith("gpqa"));
+		if (!task) throw new Error("Epoch GPQA definition missing");
+		const rows = parseEpochRuns(pair, [{ task: "GPQA diamond", definition: task }]);
+		assert.deepEqual(rows.map((row) => [row.label, row.config, row.value]), [["Claude Opus 5.5 (max)", undefined, 86], ["Claude Opus 5.5 (max)", "with fallback", 90]]);
 	});
 
 	it("reads FrontierMath tiers from the same export", () => {
@@ -162,6 +178,9 @@ describe("reasoning boards", () => {
 	it("LisanBench splits the thinking setting from the model id", () => {
 		assert.deepEqual(lisanModel("google/gemini-3.1-pro-preview:thinking-high"), { label: "google/gemini-3.1-pro-preview", effort: "high" });
 		assert.deepEqual(lisanModel("anthropic/claude-opus-4.5:thinking-16k"), { label: "anthropic/claude-opus-4.5", effort: "16k thinking" });
+		// LisanBench publishes both "deepseek-v3.2" and "deepseek-v3.2:thinking"; they must not share an identity.
+		assert.deepEqual(lisanModel("deepseek-v3.2:thinking"), { label: "deepseek-v3.2", effort: "thinking" });
+		assert.deepEqual(lisanModel("deepseek-v3.2"), { label: "deepseek-v3.2" });
 		const rows = parseLisanBench({ metadata: { num_words: 50 }, models: [{ id: "a", full: "x/a", label: "A" }, { id: "b", label: "B" }], aggregated: [{ model: "a", sum_chain_avg: 6445, sum_chain_avg_ci: [5619, 7266] }, { model: "b", sum_chain_avg: 10, coverage: { words: 40 } }] });
 		assert.deepEqual(rows.map((row) => [row.label, row.value, row.ciLow]), [["x/a", 6445, 5619]]);
 	});
@@ -197,7 +216,7 @@ describe("coding boards", () => {
 		const cursor = '<h1 class="t">CursorBench 4.1</h1><table><tr><th></th><th>Model</th><th>Score</th><th>Cost Cost / task</th><th>Tokens Tokens / task</th></tr><tr><td>1</td><td>Gemini 4 Neon Extra High</td><td>65.4 %</td><td>$ 10.67</td><td>136,273</td></tr></table>';
 		assert.deepEqual(parseCursorBench(cursor).map((row) => [row.label, row.value, row.costUsd, row.outputTokens]), [["Gemini 4 Neon Extra High", 65.4, 10.67, 136273]]);
 		assert.throws(() => parseCursorBench("<h1>CursorBench 5.0</h1>"), /version 5.0/);
-		const kernel = parseKernelBench({ models: [{ slug: "a", name: "Claude Fable 5", benches: { hard: { harness: "or-fable", passed: 5, total_problems: 6, perf: 0.629 }, mega: { harness: null, perf: 0 } } }, { slug: "gone", name: "Old", benches: { hard: { harness: "x", perf: 0.1 } } }] }, new Set(["a"]));
+		const kernel = parseKernelBench({ models: [{ slug: "a", name: "Claude Fable 5", benches: { hard: { harness: "or-fable", passed: 5, total_problems: 6, perf: 0.629 }, mega: { harness: null, perf: 0 } } }, { slug: "legacy-only", name: "Old", benches: {} }] });
 		assert.deepEqual(kernel.map((row) => [row.benchmarkId, row.value]), [["kernelbench-com-hard", 62.9]]);
 	});
 
@@ -221,8 +240,9 @@ describe("agent boards", () => {
 	});
 
 	it("FrontierMemory, FrontierPhysics, FrontierBreach and Frontier Design", () => {
-		const memory = '<table class="unified-leaderboard"><tr data-harness="Letta Dream" data-dream-model="x"><td>1</td><td>Opus 5.5 [xhigh]</td><td>75.6%</td><td>$4.47</td></tr></table>';
-		assert.deepEqual(parseFrontierMemory(memory), [{ benchmarkId: "frontiermemory", label: "Claude Opus 5.5", effort: "xhigh", harness: "Letta Dream", value: 75.6, costUsd: 4.47 }]);
+		// Shape of the live row: rank, model (task model in data-tip-task), score, score bar, cost.
+		const memory = '<table class="unified-leaderboard"><tr data-harness="Letta Dream" data-dream-model="Gemini 4 Neon"><td class="index">1</td><td class="wide"><span class="entry-name" data-tip="" data-tip-mem="Gemini 4 Neon (xhigh)" data-tip-task="Opus 5.5 (max)" data-tip-meta="Task harness: Letta Code (0.34.15)">Gemini 4 Neon</span> <span class="lb-effort">[xhigh]</span></td><td class="score-cell"><span class="score">75.6%</span></td><td class="bar"><div class="bar-track" aria-label="Mean 75.6%" data-tip="75.6% ± 7.7%"></div></td><td class="num cost-col">$4.47</td></tr></table>';
+		assert.deepEqual(parseFrontierMemory(memory), [{ benchmarkId: "frontiermemory", label: "Gemini 4 Neon", effort: "xhigh", harness: "Letta Dream", config: "task model Opus 5.5 (max)", value: 75.6, costUsd: 4.47 }]);
 		const physics = 'e.exports=JSON.parse(\'x\');const d={"agents":[{"rank":1,"baseModel":"Claude Fable 5.2","harness":"Claude Code","effort":"max","overall":{"avg3":40,"ci":5},"minutes":{"perRollout":10}}]}';
 		assert.deepEqual(parseFrontierPhysics(physics).map((row) => [row.label, row.value, row.ciLow, row.durationSeconds]), [["Claude Fable 5.2", 40, 35, 600]]);
 		const breach = '<li aria-label="GPT-6 Astra, OpenAI: 7.6% attack success rate, plus or minus 3.8"></li><li aria-label="GPT-6 Astra, OpenAI: 9% attack success rate, plus or minus 1"></li>';
@@ -236,6 +256,9 @@ describe("agent boards", () => {
 		assert.deepEqual(parseCorpoBench(corpo), [{ benchmarkId: "corpo-bench", label: "Claude Opus 4.6", effort: "max", harness: undefined, value: 49.1, costUsd: 71, durationSeconds: 25200 }]);
 		const gdpxHtml = '<span class="text-[15px] font-medium">Claude Fable 5.2</span><span>16.4<!-- -->%</span>';
 		assert.deepEqual(parseGdpx(gdpxHtml, [{ name: "Claude Fable 5.2", harness: "Claude Code", reasoning: "Max" }]), [{ benchmarkId: "gdpx", label: "Claude Fable 5.2", effort: "max", harness: "Claude Code", value: 16.4 }]);
+		// November 2026 markup adds classes after font-medium.
+		const gdpxNov = '<span class="min-w-0 text-[15px] font-medium leading-snug">GPT 6.2 Astra</span></span><span class="block text-sm font-semibold">19.3<!-- -->%</span>';
+		assert.deepEqual(parseGdpx(gdpxNov).map((row) => [row.label, row.value]), [["GPT 6.2 Astra", 19.3]]);
 		const finance = flight('9:["$","$L1e",null,{"results":[{"rank":1,"model":"Claude Fable 5.2","reasoning":"max","score":62,"ciLow":51.5,"ciHigh":72.7,"costPerTask":37.8}]}]');
 		assert.deepEqual(parseDeepFinance(finance).map((row) => [row.label, row.effort, row.value, row.costUsd]), [["Claude Fable 5.2", "max", 62, 37.8]]);
 	});

@@ -40,6 +40,22 @@ const FRONTIERMATH: Task[] = [
 	{ task: "FrontierMath-Erdos", definition: definition("frontiermath-erdos", "FrontierMath Erdős", "frontiermath-erdos", "math", "FrontierMath problems drawn from Erdős problems. Share solved, run by Epoch AI.") },
 ];
 
+/** Inference providers Epoch names in a display name: "(Together, max)". These aren't part of the model or its setup. */
+const PROVIDERS = /^(together|fireworks|deepinfra|openrouter|groq|cerebras|baseten|novita|nebius|bedrock|vertex|azure|replicate|hyperbolic|sambanova)$/i;
+
+/**
+ * "Gemini 4 Neon (xhigh)": the display name carries the effort the model id ends with. A two-part suffix names a
+ * provider ("(Together, max)", dropped) or a configuration Epoch runs separately ("(with fallback, max)", "(pro, max)",
+ * "(Apr 2026, high)"), which is kept as `config` so it isn't merged with the standalone run.
+ */
+export function epochLabel(name: string): { label: string; config?: string } {
+	const match = name.match(/\s*\(([^(),]+), ([^(),]+)\)$/);
+	if (!match) return { label: name };
+	const label = `${name.slice(0, match.index)} (${match[2].trim()})`;
+	const first = match[1].trim();
+	return PROVIDERS.test(first) ? { label } : { label, config: first };
+}
+
 /** Latest successful run per task × Epoch model id (the id carries the effort, e.g. "gpt-6_high"). */
 export function parseEpochRuns(csv: string, tasks: Task[]): SourceObservation[] {
 	const records = parseCsv(csv.replace(/^﻿/, ""));
@@ -58,11 +74,11 @@ export function parseEpochRuns(csv: string, tasks: Task[]): SourceObservation[] 
 		const score = parseNumber(row.mean_score) ?? parseNumber(row["Best score (across scorers)"]);
 		if (score === null || score < 0 || score > 1) return [];
 		const error = parseNumber(row.stderr);
+		const { label, config } = epochLabel(row["Display name"] || row["Unique display name"] || row.model);
 		return [{
 			benchmarkId: byTask.get(row.task)!.id,
-			// "Gemini 4 Neon (xhigh)": the display name carries the effort the model id ends with. "(Together, max)" also
-			// names the provider Epoch ran it through, which isn't part of the model.
-			label: (row["Display name"] || row["Unique display name"] || row.model).replace(/\(([^(),]+), ([^(),]+)\)$/, "($2)"),
+			label,
+			...(config ? { config } : {}),
 			value: score * 100,
 			ciLow: error !== null ? Math.max(0, (score - 1.96 * error) * 100) : undefined,
 			ciHigh: error !== null ? Math.min(100, (score + 1.96 * error) * 100) : undefined,

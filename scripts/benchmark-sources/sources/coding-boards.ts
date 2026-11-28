@@ -210,10 +210,14 @@ const KERNEL_DECKS = { hard: "kernelbench-com-hard", cuda: "kernelbench-com-cuda
 type KernelBlock = { harness?: string | null; effort?: string | null; passed?: number; total_problems?: number; perf?: number | null };
 type KernelModel = { slug: string; name: string; benches?: Partial<Record<string, KernelBlock>> };
 
-/** `perf` is the board's mean normalised performance over the full deck (each problem against the best result on it). */
-export function parseKernelBench(file: { models?: KernelModel[] }, roster: Set<string>): SourceObservation[] {
+/**
+ * `perf` is the board's mean normalised performance over the full deck (each problem against the best result on it).
+ * The board renders straight from models.json; models with only retired-deck results (`legacy`) have no current deck
+ * block and drop out on their own.
+ */
+export function parseKernelBench(file: { models?: KernelModel[] }): SourceObservation[] {
 	if (!Array.isArray(file?.models)) throw new Error("kernelbench.com format changed: expected models[].");
-	return file.models.flatMap((model) => (roster.size && !roster.has(model.slug) ? [] : Object.entries(KERNEL_DECKS).flatMap(([deck, benchmarkId]) => {
+	return file.models.flatMap((model) => Object.entries(KERNEL_DECKS).flatMap(([deck, benchmarkId]) => {
 		const block = model.benches?.[deck];
 		if (typeof block?.perf !== "number" || !block.harness) return [];
 		return [{
@@ -224,7 +228,7 @@ export function parseKernelBench(file: { models?: KernelModel[] }, roster: Set<s
 			value: block.perf * 100,
 			note: `${block.passed ?? 0} of ${block.total_problems ?? "?"} problems passed audited and valid`,
 		}];
-	})));
+	}));
 }
 
 const KERNEL_DESCRIPTION = "Coding agents write GPU kernels, one session per problem, and every run is audited for reward hacking. Mean performance over the full deck, each problem scored against the best result any model reached on it; failed, invalid or unaudited problems count as zero.";
@@ -242,10 +246,8 @@ export const kernelBench: BenchmarkSource = {
 		percent("kernelbench-com-mega", "KernelBench Mega (kernelbench.com)", `${KERNELBENCH}#mega`, "code", `${KERNEL_DESCRIPTION} Megakernel deck.`),
 	],
 	async fetch(ctx) {
-		const [html, file] = await Promise.all([ctx.fetchText(KERNELBENCH), ctx.fetchJson<{ models?: KernelModel[] }>(KERNELBENCH_DATA)]);
-		// models.json also keeps models the board no longer shows; the home page links the live ones.
-		const roster = new Set([...html.matchAll(/href="\/models\/([^"/?#]+)"/g)].map((match) => decodeURIComponent(match[1])));
-		return parseKernelBench(file, roster);
+		// The home page now renders in the browser from this file and links only a few featured models.
+		return parseKernelBench(await ctx.fetchJson<{ models?: KernelModel[] }>(KERNELBENCH_DATA));
 	},
 };
 

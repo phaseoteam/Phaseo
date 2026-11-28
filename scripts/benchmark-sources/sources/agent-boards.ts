@@ -81,18 +81,31 @@ export const andonLabs: BenchmarkSource = {
 
 const FRONTIER_MEMORY = "https://frontiermemory.com/";
 
-/** The unified table's rows carry `data-harness`; the model cell reads "Gemini 4 Neon [xhigh]". */
+/**
+ * The unified table's rows carry `data-harness`; the model cell reads "Gemini 4 Neon [xhigh]" and names the model that
+ * completed the tasks in `data-tip-task`. Cells: rank, model, score, score bar, cost.
+ */
 export function parseFrontierMemory(html: string): SourceObservation[] {
 	const start = html.indexOf("unified-leaderboard");
 	if (start < 0) throw new Error("FrontierMemory format changed: unified-leaderboard not found.");
 	const table = html.slice(start, html.indexOf("</table>", start));
 	return [...table.matchAll(/<tr data-harness="([^"]*)" data-dream-model="[^"]*">([\s\S]*?)<\/tr>/g)].flatMap(([, harness, row]) => {
 		const cells = [...row.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((cell) => htmlText(cell[1]));
-		const [, model, score, cost] = cells;
+		const [, model, score, , cost] = cells;
 		const value = parseNumber(score);
 		if (!model || value === null) return [];
 		const effort = model.match(/\[([^\]]+)\]\s*$/)?.[1];
-		return [{ benchmarkId: "frontiermemory", label: withClaudeFamily(model.replace(/\s*\[[^\]]+\]\s*$/, "")), effort, harness: htmlText(harness), value, costUsd: parseNumber(cost) ?? undefined }];
+		// The row is the memory model's result, but different rows use different task models; that is part of the setup.
+		const taskModel = row.match(/data-tip-task="([^"]+)"/)?.[1];
+		return [{
+			benchmarkId: "frontiermemory",
+			label: withClaudeFamily(model.replace(/\s*\[[^\]]+\]\s*$/, "")),
+			effort,
+			harness: htmlText(harness),
+			...(taskModel ? { config: `task model ${htmlText(taskModel)}` } : {}),
+			value,
+			costUsd: parseNumber(cost) ?? undefined,
+		}];
 	});
 }
 
@@ -260,10 +273,10 @@ const GDPX = "https://gdpx.semianalysis.com/";
 
 type GdpxModel = { name: string; harness?: string; reasoning?: string };
 
-/** The page renders the leaderboard: `text-[15px] font-medium">Claude Fable 5.2</span>…>16.4<!-- -->%`. */
+/** The page renders the leaderboard: `text-[15px] font-medium leading-snug">Claude Fable 5.2</span>…>16.4<!-- -->%`. */
 export function parseGdpx(html: string, models: GdpxModel[] = []): SourceObservation[] {
 	const byName = new Map(models.map((model) => [model.name, model]));
-	return [...html.matchAll(/text-\[15px\] font-medium">([^<]+)<\/span>[\s\S]*?>(\d+(?:\.\d+)?)<!-- -->%/g)].map(([, name, score]) => {
+	return [...html.matchAll(/text-\[15px\] font-medium[^"]*">([^<]+)<\/span>[\s\S]*?>(\d+(?:\.\d+)?)<!-- -->%/g)].map(([, name, score]) => {
 		const model = byName.get(htmlText(name));
 		// "Highest" names each model's top setting, whatever the provider calls it.
 		const effort = model?.reasoning && model.reasoning !== "Highest" ? model.reasoning.toLowerCase() : undefined;

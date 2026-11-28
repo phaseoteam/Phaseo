@@ -96,6 +96,8 @@ type LisanFile = { metadata?: { num_words?: number }; models: LisanModel[]; aggr
 /** "anthropic/claude-opus-4.6:thinking-high" → label "anthropic/claude-opus-4.6", effort "high"; "thinking-16k" is a budget. */
 export function lisanModel(id: string): { label: string; effort?: string } {
 	const [label, mode = ""] = id.split(":");
+	// A bare ":thinking" run is published next to the non-thinking run of the same model; keep them apart.
+	if (mode === "thinking") return { label, effort: "thinking" };
 	const setting = mode.match(/^thinking-(.+)$/)?.[1];
 	if (!setting) return { label };
 	return { label, effort: /^\d+k$/.test(setting) ? `${setting} thinking` : setting };
