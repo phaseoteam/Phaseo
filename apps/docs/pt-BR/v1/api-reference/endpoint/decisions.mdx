@@ -177,7 +177,7 @@ As respostas usam as mesmas chaves de `questions`. Respostas `choice` incluem a 
 <span id="choose-a-model"></span>
 ### Ordenar opções
 
-Uma pergunta `ranking` ordena as opções de `criteria`, da melhor para a pior. Ela recebe `criteria` (pelo menos duas opções) e um `top_k` opcional que retorna apenas as `top_k` melhores. Qualquer modelo que responda perguntas `choice` também a responde: a Phaseo pergunta ao modelo qual opção é a melhor e ordena as opções pelas probabilidades. A resposta traz `ranking`, as chaves das opções em ordem, e `probabilities`, a probabilidade de cada opção ser a melhor. Opções com a mesma probabilidade mantêm a ordem de `criteria`. Uma pergunta de ranking é cobrada como uma pergunta de escolha. O ranking só funciona no formato de estado antigo. O Together Tev retorna um rótulo sem probabilidades, então não responde perguntas de ranking.
+Uma pergunta `ranking` ordena as opções de `criteria`, da melhor para a pior. Ela recebe `criteria` (pelo menos duas opções) e um `top_k` opcional que retorna apenas as `top_k` melhores. A Phaseo pergunta ao modelo qual opção é a melhor e ordena as opções pelas probabilidades, então funciona com modelos cujas rotas retornam uma probabilidade para cada opção de escolha. O Together Tev e o Respan Span-01 não fazem isso, então uma pergunta de ranking para eles retorna `400` com `error: "unsupported_parameter"`. A resposta traz `ranking`, as chaves das opções em ordem, e `probabilities`, a probabilidade de cada opção ser a melhor. Opções com a mesma probabilidade mantêm a ordem de `criteria`, exceto chaves que são números inteiros, como `"10"`, ordenadas numericamente como em qualquer objeto JSON. Uma pergunta de ranking é cobrada como uma pergunta de escolha. O ranking só funciona no formato de estado antigo.
 
 ```json
 {
@@ -196,10 +196,13 @@ Uma pergunta `ranking` ordena as opções de `criteria`, da melhor para a pior. 
 
 ```json
 {
-  "follow_up": {
-    "type": "ranking",
-    "ranking": ["email", "chat"],
-    "probabilities": { "email": 0.71, "phone": 0.04, "chat": 0.22, "none": 0.03 }
+  "model": "liquid-ai/d1.2-ultra",
+  "answers": {
+    "follow_up": {
+      "type": "ranking",
+      "ranking": ["email", "chat"],
+      "probabilities": { "email": 0.71, "phone": 0.04, "chat": 0.22, "none": 0.03 }
+    }
   }
 }
 ```

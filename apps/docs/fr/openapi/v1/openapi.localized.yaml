@@ -15071,7 +15071,7 @@ components:
         - instructions
         - criteria
       additionalProperties: false
-      description: Classe les options de la meilleure à la moins bonne, ou ne renvoie que les top_k meilleures. Tous les modèles de décision y répondent. La réponse liste les clés des options classées et la probabilité que chaque option soit la meilleure.
+      description: Classe les options de la meilleure à la moins bonne, ou ne renvoie que les top_k meilleures. Les modèles dont les routes renvoient une probabilité pour chaque option de choix y répondent ; les autres renvoient 400. La réponse liste les clés des options classées et la probabilité que chaque option soit la meilleure.
       properties:
         type:
           type: string

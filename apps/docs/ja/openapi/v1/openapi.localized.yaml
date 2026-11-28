@@ -15071,7 +15071,7 @@ components:
         - instructions
         - criteria
       additionalProperties: false
-      description: 選択肢を良い順に並べるか、上位 top_k 件だけを返します。すべての判定モデルが回答できます。回答には、並べ替えた選択肢のキーと、各選択肢が最良である確率が含まれます。
+      description: 選択肢を良い順に並べるか、上位 top_k 件だけを返します。各選択肢の確率を返すルートを持つモデルが回答し、それ以外は 400 を返します。回答には、並べ替えた選択肢のキーと、各選択肢が最良である確率が含まれます。
       properties:
         type:
           type: string

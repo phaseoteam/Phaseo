@@ -177,7 +177,7 @@ print(decision["answers"])
 <span id="choose-a-model"></span>
 ### 为选项排序
 
-`ranking` 问题会把 `criteria` 中的选项按从好到差排序。它接受 `criteria`（至少两个选项）和可选的 `top_k`，后者只返回最好的 `top_k` 个。所有能回答 `choice` 问题的模型都能回答它：Phaseo 询问模型哪个选项最好，并按各选项的概率排序。回答包含 `ranking`（按顺序排列的选项键）和 `probabilities`（每个选项是最佳选项的概率）。概率相同的选项保持其在 `criteria` 中的顺序。ranking 问题按 choice 问题计费。排序仅适用于旧的 state 格式。Together Tev 只返回标签而不返回概率，因此无法回答 ranking 问题。
+`ranking` 问题会把 `criteria` 中的选项按从好到差排序。它接受 `criteria`（至少两个选项）和可选的 `top_k`，后者只返回最好的 `top_k` 个。Phaseo 询问模型哪个选项最好，并按各选项的概率排序，因此适用于路由会为每个选项返回概率的模型。Together Tev 和 Respan Span-01 不返回概率，因此向它们发送 ranking 问题会返回 `400` 和 `error: "unsupported_parameter"`。回答包含 `ranking`（按顺序排列的选项键）和 `probabilities`（每个选项是最佳选项的概率）。概率相同的选项保持其在 `criteria` 中的顺序，但像 `"10"` 这样的整数键会像任何 JSON 对象一样按数值排序。ranking 问题按 choice 问题计费。排序仅适用于旧的 state 格式。
 
 ```json
 {
@@ -196,10 +196,13 @@ print(decision["answers"])
 
 ```json
 {
-  "follow_up": {
-    "type": "ranking",
-    "ranking": ["email", "chat"],
-    "probabilities": { "email": 0.71, "phone": 0.04, "chat": 0.22, "none": 0.03 }
+  "model": "liquid-ai/d1.2-ultra",
+  "answers": {
+    "follow_up": {
+      "type": "ranking",
+      "ranking": ["email", "chat"],
+      "probabilities": { "email": 0.71, "phone": 0.04, "chat": 0.22, "none": 0.03 }
+    }
   }
 }
 ```

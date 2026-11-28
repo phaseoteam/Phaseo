@@ -15071,7 +15071,7 @@ components:
         - instructions
         - criteria
       additionalProperties: false
-      description: 按从好到差的顺序排列选项，或只返回最好的 top_k 个。所有决策模型都能回答。回答列出排序后的选项键，以及每个选项是最佳选项的概率。
+      description: 按从好到差的顺序排列选项，或只返回最好的 top_k 个。路由会为每个选项返回概率的模型能回答它；其他模型返回 400。回答列出排序后的选项键，以及每个选项是最佳选项的概率。
       properties:
         type:
           type: string

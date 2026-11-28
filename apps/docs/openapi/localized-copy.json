@@ -12820,15 +12820,15 @@
 			"zh-Hans": "GPT Live 会话正在结束",
 			"ar": "جلسة GPT Live قيد الإنهاء"
 		},
-		"Orders the options, best first, or returns only the best top_k. Every decision model answers it. The answer lists the ranked option keys and the probability that each option is the best one.": {
-			"es": "Ordena las opciones de la mejor a la peor, o devuelve solo las top_k mejores. Todos los modelos de decisión la responden. La respuesta enumera las claves de las opciones ordenadas y la probabilidad de que cada opción sea la mejor.",
-			"fr": "Classe les options de la meilleure à la moins bonne, ou ne renvoie que les top_k meilleures. Tous les modèles de décision y répondent. La réponse liste les clés des options classées et la probabilité que chaque option soit la meilleure.",
-			"de": "Ordnet die Optionen, die beste zuerst, oder gibt nur die besten top_k zurück. Jedes Entscheidungsmodell beantwortet sie. Die Antwort listet die Schlüssel der geordneten Optionen und die Wahrscheinlichkeit, dass jede Option die beste ist.",
-			"pt-BR": "Ordena as opções da melhor para a pior, ou retorna apenas as top_k melhores. Todos os modelos de decisão a respondem. A resposta lista as chaves das opções ordenadas e a probabilidade de cada opção ser a melhor.",
-			"hi": "विकल्पों को सबसे अच्छे से शुरू करके क्रम में लगाता है, या केवल सबसे अच्छे top_k लौटाता है। हर डिसीज़न मॉडल इसका उत्तर देता है। उत्तर में क्रमबद्ध विकल्पों की कुंजियाँ और हर विकल्प के सबसे अच्छा होने की संभावना होती है।",
-			"ja": "選択肢を良い順に並べるか、上位 top_k 件だけを返します。すべての判定モデルが回答できます。回答には、並べ替えた選択肢のキーと、各選択肢が最良である確率が含まれます。",
-			"zh-Hans": "按从好到差的顺序排列选项，或只返回最好的 top_k 个。所有决策模型都能回答。回答列出排序后的选项键，以及每个选项是最佳选项的概率。",
-			"ar": "يرتب الخيارات من الأفضل إلى الأسوأ، أو يُعيد أفضل top_k منها فقط. تجيب عنه جميع نماذج القرار. تسرد الإجابة مفاتيح الخيارات المرتبة واحتمال أن يكون كل خيار هو الأفضل."
+		"Orders the options, best first, or returns only the best top_k. Models whose routes return a probability for each choice option answer it; others return 400. The answer lists the ranked option keys and the probability that each option is the best one.": {
+			"es": "Ordena las opciones de la mejor a la peor, o devuelve solo las top_k mejores. La responden los modelos cuyas rutas devuelven una probabilidad para cada opción de elección; los demás devuelven 400. La respuesta enumera las claves de las opciones ordenadas y la probabilidad de que cada opción sea la mejor.",
+			"fr": "Classe les options de la meilleure à la moins bonne, ou ne renvoie que les top_k meilleures. Les modèles dont les routes renvoient une probabilité pour chaque option de choix y répondent ; les autres renvoient 400. La réponse liste les clés des options classées et la probabilité que chaque option soit la meilleure.",
+			"de": "Ordnet die Optionen, die beste zuerst, oder gibt nur die besten top_k zurück. Modelle, deren Routen für jede Auswahloption eine Wahrscheinlichkeit liefern, beantworten sie; andere geben 400 zurück. Die Antwort listet die Schlüssel der geordneten Optionen und die Wahrscheinlichkeit, dass jede Option die beste ist.",
+			"pt-BR": "Ordena as opções da melhor para a pior, ou retorna apenas as top_k melhores. Respondem a ela os modelos cujas rotas retornam uma probabilidade para cada opção de escolha; os demais retornam 400. A resposta lista as chaves das opções ordenadas e a probabilidade de cada opção ser a melhor.",
+			"hi": "विकल्पों को सबसे अच्छे से शुरू करके क्रम में लगाता है, या केवल सबसे अच्छे top_k लौटाता है। जिन मॉडलों के रूट हर choice विकल्प के लिए संभावना लौटाते हैं, वे इसका उत्तर देते हैं; बाकी 400 लौटाते हैं। उत्तर में क्रमबद्ध विकल्पों की कुंजियाँ और हर विकल्प के सबसे अच्छा होने की संभावना होती है।",
+			"ja": "選択肢を良い順に並べるか、上位 top_k 件だけを返します。各選択肢の確率を返すルートを持つモデルが回答し、それ以外は 400 を返します。回答には、並べ替えた選択肢のキーと、各選択肢が最良である確率が含まれます。",
+			"zh-Hans": "按从好到差的顺序排列选项，或只返回最好的 top_k 个。路由会为每个选项返回概率的模型能回答它；其他模型返回 400。回答列出排序后的选项键，以及每个选项是最佳选项的概率。",
+			"ar": "يرتب الخيارات من الأفضل إلى الأسوأ، أو يُعيد أفضل top_k منها فقط. تجيب عنه النماذج التي تُعيد مساراتها احتمالًا لكل خيار؛ وتُعيد النماذج الأخرى 400. تسرد الإجابة مفاتيح الخيارات المرتبة واحتمال أن يكون كل خيار هو الأفضل."
 		},
 		"Returns only the best top_k options. At most the number of criteria.": {
 			"es": "Devuelve solo las top_k mejores opciones. Como máximo, el número de criterios.",

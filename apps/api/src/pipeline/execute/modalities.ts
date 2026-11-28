@@ -61,11 +61,19 @@ export function routeServesTypedDecisionFeatures(
 }
 
 /**
- * Whether a route answers choice questions with a probability per option. Routes that
- * return only a label (Together Tev) declare params.choice_probabilities false.
+ * Providers whose decision routes never return a probability per choice option: Together
+ * Tev answers with a label only, and Respan Span-01 answers noul questions only. Kept in
+ * code so ranking requests stay off them even where the catalogue lacks the flag below.
  */
-export function routeGivesChoiceProbabilities(candidate: Pick<ProviderCandidate, "capabilityParams">): boolean {
-	return candidate.capabilityParams?.choice_probabilities !== false;
+const NO_CHOICE_PROBABILITY_PROVIDERS = new Set(["together", "respan"]);
+
+/**
+ * Whether a route answers choice questions with a probability per option. A capability
+ * can also declare params.choice_probabilities false.
+ */
+export function routeGivesChoiceProbabilities(candidate: Pick<ProviderCandidate, "providerId" | "capabilityParams">): boolean {
+	return !NO_CHOICE_PROBABILITY_PROVIDERS.has(candidate.providerId) &&
+		candidate.capabilityParams?.choice_probabilities !== false;
 }
 
 export function filterDecisionCandidatesByModalities(

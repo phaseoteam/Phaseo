@@ -15071,7 +15071,7 @@ components:
         - instructions
         - criteria
       additionalProperties: false
-      description: Ordnet die Optionen, die beste zuerst, oder gibt nur die besten top_k zurück. Jedes Entscheidungsmodell beantwortet sie. Die Antwort listet die Schlüssel der geordneten Optionen und die Wahrscheinlichkeit, dass jede Option die beste ist.
+      description: Ordnet die Optionen, die beste zuerst, oder gibt nur die besten top_k zurück. Modelle, deren Routen für jede Auswahloption eine Wahrscheinlichkeit liefern, beantworten sie; andere geben 400 zurück. Die Antwort listet die Schlüssel der geordneten Optionen und die Wahrscheinlichkeit, dass jede Option die beste ist.
       properties:
         type:
           type: string

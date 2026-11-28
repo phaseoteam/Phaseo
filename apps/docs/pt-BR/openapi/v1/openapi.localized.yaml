@@ -15071,7 +15071,7 @@ components:
         - instructions
         - criteria
       additionalProperties: false
-      description: Ordena as opções da melhor para a pior, ou retorna apenas as top_k melhores. Todos os modelos de decisão a respondem. A resposta lista as chaves das opções ordenadas e a probabilidade de cada opção ser a melhor.
+      description: Ordena as opções da melhor para a pior, ou retorna apenas as top_k melhores. Respondem a ela os modelos cujas rotas retornam uma probabilidade para cada opção de escolha; os demais retornam 400. A resposta lista as chaves das opções ordenadas e a probabilidade de cada opção ser a melhor.
       properties:
         type:
           type: string

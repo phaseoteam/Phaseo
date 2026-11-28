@@ -177,7 +177,7 @@ Antworten verwenden dieselben Schlüssel wie `questions`. `choice`-Antworten ent
 <span id="choose-a-model"></span>
 ### Optionen ordnen
 
-Eine `ranking`-Frage ordnet die Optionen in `criteria`, die beste zuerst. Sie nimmt `criteria` (mindestens zwei Optionen) und ein optionales `top_k`, das nur die besten `top_k` zurückgibt. Jedes Modell, das `choice`-Fragen beantwortet, beantwortet auch sie: Phaseo fragt das Modell, welche Option die beste ist, und ordnet die Optionen nach ihren Wahrscheinlichkeiten. Die Antwort enthält `ranking`, die Schlüssel der Optionen in Reihenfolge, und `probabilities`, die Wahrscheinlichkeit, dass jede Option die beste ist. Optionen mit gleicher Wahrscheinlichkeit behalten ihre Reihenfolge aus `criteria`. Eine Ranking-Frage wird wie eine Auswahlfrage abgerechnet. Ranking funktioniert nur im älteren state-Format. Together Tev gibt nur ein Label ohne Wahrscheinlichkeiten zurück und kann deshalb keine Ranking-Fragen beantworten.
+Eine `ranking`-Frage ordnet die Optionen in `criteria`, die beste zuerst. Sie nimmt `criteria` (mindestens zwei Optionen) und ein optionales `top_k`, das nur die besten `top_k` zurückgibt. Phaseo fragt das Modell, welche Option die beste ist, und ordnet die Optionen nach ihren Wahrscheinlichkeiten. Das funktioniert daher mit Modellen, deren Routen für jede Auswahloption eine Wahrscheinlichkeit liefern. Together Tev und Respan Span-01 tun das nicht, deshalb gibt eine Ranking-Frage an sie `400` mit `error: "unsupported_parameter"` zurück. Die Antwort enthält `ranking`, die Schlüssel der Optionen in Reihenfolge, und `probabilities`, die Wahrscheinlichkeit, dass jede Option die beste ist. Optionen mit gleicher Wahrscheinlichkeit behalten ihre Reihenfolge aus `criteria`, außer Schlüssel aus ganzen Zahlen wie `"10"`, die wie in jedem JSON-Objekt numerisch geordnet werden. Eine Ranking-Frage wird wie eine Auswahlfrage abgerechnet. Ranking funktioniert nur im älteren state-Format.
 
 ```json
 {
@@ -196,10 +196,13 @@ Eine `ranking`-Frage ordnet die Optionen in `criteria`, die beste zuerst. Sie ni
 
 ```json
 {
-  "follow_up": {
-    "type": "ranking",
-    "ranking": ["email", "chat"],
-    "probabilities": { "email": 0.71, "phone": 0.04, "chat": 0.22, "none": 0.03 }
+  "model": "liquid-ai/d1.2-ultra",
+  "answers": {
+    "follow_up": {
+      "type": "ranking",
+      "ranking": ["email", "chat"],
+      "probabilities": { "email": 0.71, "phone": 0.04, "chat": 0.22, "none": 0.03 }
+    }
   }
 }
 ```

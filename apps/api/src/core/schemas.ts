@@ -1879,7 +1879,8 @@ const DecisionQuestionSchema = lazySchema(() => z.discriminatedUnion("type", [
         // Every option that applies, each with its own probability (typed-answer routes only).
         multiple: z.boolean().optional(),
     }).passthrough(),
-    // Every option ordered best first, or the best top_k. Any decision model answers it.
+    // Every option ordered best first, or the best top_k. Routes that return choice
+    // probabilities answer it (see routeGivesChoiceProbabilities).
     z.object({
         type: z.literal("ranking"),
         instructions: DecisionInstructionsSchema,
@@ -1887,9 +1888,10 @@ const DecisionQuestionSchema = lazySchema(() => z.discriminatedUnion("type", [
             (criteria) => Object.keys(criteria).length >= 2,
             { message: "Ranking questions require at least two criteria." },
         ),
-        top_k: z.number().int().min(1).optional(),
+        // Generated SDKs (C#, PHP) send null for an unset optional field; null means "rank every option".
+        top_k: z.number().int().min(1).nullable().optional(),
     }).strict().superRefine((question, ctx) => {
-        if (question.top_k !== undefined && question.top_k > Object.keys(question.criteria).length) {
+        if (typeof question.top_k === "number" && question.top_k > Object.keys(question.criteria).length) {
             ctx.addIssue({ code: "custom", path: ["top_k"], message: "top_k cannot exceed the number of criteria." });
         }
     }),

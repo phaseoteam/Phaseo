@@ -279,6 +279,19 @@ describe("Ranking questions", () => {
 		// Label-only routes still serve plain choice questions.
 		const choice = legacy({ questions: { best: { type: "choice", instructions: "?", criteria } } });
 		expect(filterDecisionCandidatesByModalities([anyRoute, tev], choice)).toEqual([anyRoute, tev]);
+		// Tev and Respan are skipped even when their capability lacks the flag.
+		const unflaggedTev = { providerId: "together", capabilityParams: {} } as unknown as ProviderCandidate;
+		const respan = { providerId: "respan", capabilityParams: {} } as unknown as ProviderCandidate;
+		expect(filterDecisionCandidatesByModalities([unflaggedTev, respan, anyRoute], ir)).toEqual([anyRoute]);
+	});
+	it("treats top_k null (sent by generated SDKs) as ranking every option", async () => {
+		const ir = legacy({ questions: { best: { type: "ranking", instructions: "Best first", criteria, top_k: null } } });
+		const { result } = await run(decisionIrForRoute(ir, anyRoute), {
+			best: { type: "choice", choice: "phone", confidence: 0.5, probabilities },
+		});
+		expect(encodeDecisionsResponse(result.ir as any, ir).answers.best).toEqual({
+			type: "ranking", ranking: ["phone", "email", "chat", "none"], probabilities,
+		});
 	});
 });
 

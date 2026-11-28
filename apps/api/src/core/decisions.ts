@@ -51,14 +51,16 @@ export function decisionQuestionFeature(question: { type: string; multiple?: unk
 
 /**
  * A ranking question orders its options, best first, and with `top_k` keeps only the
- * first k. Every decision route answers it: the route is asked the same question as a
- * choice, and the options are ordered by the probability that each is the best one.
+ * first k. Any route that returns choice probabilities answers it: the route is asked the
+ * same question as a choice, and the options are ordered by the probability that each is
+ * the best one.
  */
 export type DecisionRankingQuestion = {
 	type: "ranking";
-	instructions: unknown;
+	instructions: string | Record<string, unknown> | unknown[];
 	criteria: Record<string, string | null>;
-	top_k?: number;
+	// null (sent by generated SDKs for an unset field) means every option, like undefined.
+	top_k?: number | null;
 };
 
 export function isRankingQuestion(question: { type: string }): question is DecisionRankingQuestion & { type: "ranking" } {
@@ -66,7 +68,7 @@ export function isRankingQuestion(question: { type: string }): question is Decis
 }
 
 /** The choice question a route is asked in place of a ranking question. */
-export function rankingQuestionAsChoice(question: DecisionRankingQuestion): { type: "choice"; instructions: any; criteria: Record<string, string | null> } {
+export function rankingQuestionAsChoice(question: DecisionRankingQuestion): { type: "choice"; instructions: DecisionRankingQuestion["instructions"]; criteria: Record<string, string | null> } {
 	return { type: "choice", instructions: question.instructions, criteria: question.criteria };
 }
 
@@ -87,7 +89,7 @@ export function rankingAnswerFromChoice(answer: unknown, question: DecisionRanki
 		.map(entry => entry.option);
 	return {
 		type: "ranking",
-		ranking: question.top_k === undefined ? ranking : ranking.slice(0, question.top_k),
+		ranking: typeof question.top_k === "number" ? ranking.slice(0, question.top_k) : ranking,
 		probabilities: Object.fromEntries(options.map(option => [option, probabilities[option] ?? 0])),
 	};
 }

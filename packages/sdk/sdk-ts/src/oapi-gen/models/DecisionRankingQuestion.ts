@@ -1,5 +1,5 @@
 /**
- * Orders the options, best first, or returns only the best top_k. Every decision model answers it. The answer lists the ranked option keys and the probability that each option is the best one.
+ * Orders the options, best first, or returns only the best top_k. Models whose routes return a probability for each choice option answer it; others return 400. The answer lists the ranked option keys and the probability that each option is the best one.
  */
 export interface DecisionRankingQuestion {
   criteria: {

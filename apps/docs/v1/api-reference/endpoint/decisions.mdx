@@ -177,7 +177,7 @@ Answers use the same keys as `questions`. `choice` answers include the selected 
 
 ### Rank options
 
-A `ranking` question puts its `criteria` options in order, best first. It takes `criteria` (at least two options) and an optional `top_k` that returns only the best `top_k`. Every model that answers `choice` questions answers it: Phaseo asks the model which option is best and orders the options by their probabilities. The answer has `ranking`, the option keys in order, and `probabilities`, the probability that each option is the best one. Options with the same probability keep their order in `criteria`. A ranking question is billed like a choice question. Ranking works in the older state format only. Together Tev returns a label without probabilities, so it can't answer ranking questions.
+A `ranking` question puts its `criteria` options in order, best first. It takes `criteria` (at least two options) and an optional `top_k` that returns only the best `top_k`. Phaseo asks the model which option is best and orders the options by their probabilities, so it works on models whose routes return a probability for each choice option. Together Tev and Respan Span-01 don't, so a ranking question for them returns `400` with `error: "unsupported_parameter"`. The answer has `ranking`, the option keys in order, and `probabilities`, the probability that each option is the best one. Options with the same probability keep their order in `criteria`, except that keys that are whole numbers, such as `"10"`, are ordered numerically, as in any JSON object. A ranking question is billed like a choice question. Ranking works in the older state format only.
 
 ```json
 {
@@ -196,10 +196,13 @@ A `ranking` question puts its `criteria` options in order, best first. It takes 
 
 ```json
 {
-  "follow_up": {
-    "type": "ranking",
-    "ranking": ["email", "chat"],
-    "probabilities": { "email": 0.71, "phone": 0.04, "chat": 0.22, "none": 0.03 }
+  "model": "liquid-ai/d1.2-ultra",
+  "answers": {
+    "follow_up": {
+      "type": "ranking",
+      "ranking": ["email", "chat"],
+      "probabilities": { "email": 0.71, "phone": 0.04, "chat": 0.22, "none": 0.03 }
+    }
   }
 }
 ```
